@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Authors>alexalok</Authors>
+    <Company />
+    <Description>Contains classes allowing for usage of dotAPNS package in ASP.NET Core 3 projects.</Description>
+    <Copyright>Copyright © alexalok 2019</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" Version="3.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\dotAPNS\dotAPNS.csproj" />
+  </ItemGroup>
+
+</Project>

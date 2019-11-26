@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>alexalok</Authors>
+    <Company></Company>
+    <Description>dotAPNS is a library used to send push notifications to Apple devices using Apple Push Notification service.</Description>
+    <Copyright>Copyright © alexalok 2019</Copyright>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <PackageReleaseNotes>Added JsonContent class.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2019.1.3" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.6.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="System.Security.Cryptography.Cng" Version="4.6.1" />
+  </ItemGroup>
+
+</Project>

@@ -1,4 +1,6 @@
-﻿namespace dotAPNS
+﻿using Newtonsoft.Json;
+
+namespace dotAPNS
 {
     public class ApnsResponse
     {
@@ -6,19 +8,16 @@
         public string ReasonString { get; }
         public bool IsSuccessful { get; }
 
-        public ApnsResponse(ApnsResponseReason reason, string reasonString) : this(false)
+        [JsonConstructor]
+        ApnsResponse(ApnsResponseReason reason, string reasonString, bool isSuccessful)
         {
             Reason = reason;
             ReasonString = reasonString;
-        }
-
-        ApnsResponse(bool isSuccessful)
-        {
             IsSuccessful = isSuccessful;
         }
 
-        public static ApnsResponse Successful() => new ApnsResponse(true);
+        public static ApnsResponse Successful() => new ApnsResponse(ApnsResponseReason.Success, null, true);
 
-        public static ApnsResponse Error(ApnsResponseReason reason, string reasonString) => new ApnsResponse(reason, reasonString);
+        public static ApnsResponse Error(ApnsResponseReason reason, string reasonString) => new ApnsResponse(reason, reasonString, false);
     }
 }

@@ -2,6 +2,7 @@
 {
     public enum ApnsResponseReason
     {
+        Success,
         Unknown,
         DeviceTokenNotForTopic
     }

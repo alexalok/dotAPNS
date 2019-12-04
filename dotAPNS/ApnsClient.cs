@@ -189,6 +189,9 @@ namespace dotAPNS
             if (push.Sound != null)
                 payload.aps.sound = push.Sound;
 
+            if (push.Location != null)
+                payload.aps.Location = push.Location;
+
             return payload;
         }
 

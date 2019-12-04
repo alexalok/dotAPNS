@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using JetBrains.Annotations;
 
 namespace dotAPNS
@@ -125,6 +125,35 @@ namespace dotAPNS
         {
             if (IsContentAvailable)
                 throw new InvalidOperationException("Cannot add fields to a push with content-available");
+        }
+
+        public object GeneratePayload()
+        {
+            dynamic payload = new ExpandoObject();
+            payload.aps = new ExpandoObject();
+            if (IsContentAvailable)
+            {
+                IDictionary<string, object> apsAsDict = payload.aps;
+                apsAsDict["content-available"] = "1";
+                return payload;
+            }
+
+            if (Alert != null)
+            {
+                    alert = new { title = Alert.Title, body = Alert.Body };
+                payload.aps.alert = alert;
+            }
+
+            if (Badge != null)
+                payload.aps.badge = Badge.Value;
+
+            if (Sound != null)
+                payload.aps.sound = Sound;
+
+            if (Location != null)
+                payload.aps.Location = Location;
+
+            return payload;
         }
     }
 

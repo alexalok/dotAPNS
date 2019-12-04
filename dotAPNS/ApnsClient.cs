@@ -80,7 +80,7 @@ namespace dotAPNS
                     throw new InvalidOperationException("Provided certificate can only be used to send 'voip' type pushes.");
             }
 
-            var payload = GeneratePayload(push);
+            var payload = push.GeneratePayload();
 
             var req = new HttpRequestMessage(HttpMethod.Post, (_useSandbox ? DevelopmentEndpoint : ProductionEndpoint) + (push.Token ?? push.VoipToken));
             req.Version = new Version(2, 0);
@@ -164,35 +164,6 @@ namespace dotAPNS
         {
             _useSandbox = true;
             return this;
-        }
-
-        object GeneratePayload(ApplePush push)
-        {
-            dynamic payload = new ExpandoObject();
-            payload.aps = new ExpandoObject();
-            if (push.IsContentAvailable)
-            {
-                IDictionary<string, object> apsAsDict = payload.aps;
-                apsAsDict["content-available"] = "1";
-                return payload;
-            }
-
-            if (push.Alert != null)
-            {
-                var alert = new { title = push.Alert.Title, body = push.Alert.Body };
-                payload.aps.alert = alert;
-            }
-
-            if (push.Badge != null)
-                payload.aps.badge = push.Badge.Value;
-
-            if (push.Sound != null)
-                payload.aps.sound = push.Sound;
-
-            if (push.Location != null)
-                payload.aps.Location = push.Location;
-
-            return payload;
         }
 
         string GetTopic(ApplePushType pushType)

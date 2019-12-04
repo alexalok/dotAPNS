@@ -1,4 +1,7 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Dynamic;
 using JetBrains.Annotations;
 
 namespace dotAPNS
@@ -40,6 +43,11 @@ namespace dotAPNS
         /// </summary>
         bool _sendAsVoipType;
 
+        /// <summary>
+        /// Indicates whether alert must be sent as a string. 
+        /// </summary>
+        bool _sendAlertAsText;
+
         ApplePush()
         {
         }
@@ -57,7 +65,17 @@ namespace dotAPNS
         /// <param name="alert"></param>
         /// <param name="sendAsVoipType">True if push must be sent with 'voip' type rather than 'alert'.</param>
         /// <returns></returns>
-        public static ApplePush CreateAlert(ApplePushAlert alert, bool sendAsVoipType = false) => new ApplePush() { Alert = alert, _sendAsVoipType = sendAsVoipType };
+        public static ApplePush CreateAlert(ApplePushAlert alert, bool sendAsVoipType = false) => 
+            new ApplePush() { Alert = alert, _sendAsVoipType = sendAsVoipType };
+
+        /// <summary>
+        /// Send alert push with alert as string.
+        /// </summary>
+        /// <param name="alert"></param>
+        /// <param name="sendAsVoipType">True if push must be sent with 'voip' type rather than 'alert'.</param>
+        /// <returns></returns>
+        public static ApplePush CreateAlert(string alert, bool sendAsVoipType = false) => 
+            new ApplePush() { Alert = new ApplePushAlert(null, alert), _sendAsVoipType = sendAsVoipType, _sendAlertAsText = true};
 
         public ApplePush AddBadge(int badge)
         {
@@ -140,6 +158,10 @@ namespace dotAPNS
 
             if (Alert != null)
             {
+                object alert;
+                if (_sendAlertAsText)
+                    alert = Alert.Body;
+                else
                     alert = new { title = Alert.Title, body = Alert.Body };
                 payload.aps.alert = alert;
             }

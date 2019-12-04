@@ -27,7 +27,7 @@ namespace dotAPNS.Tests
         public async Task Sending_Push_Not_Throws()
         {
             var client = BoostrapApnsClient();
-            var push = ApplePush.CreateAlert(null, "body")
+            var push = ApplePush.CreateAlert("body")
                 .AddToken("token")
                 .AddBadge(1)
                 .AddSound()

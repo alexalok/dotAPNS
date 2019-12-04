@@ -68,7 +68,7 @@ namespace dotAPNS
             return this;
         }
 
-        public ApplePush AddSound([NotNull] string sound)
+        public ApplePush AddSound([NotNull] string sound = "default")
         {
             if (string.IsNullOrWhiteSpace(sound))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(sound));

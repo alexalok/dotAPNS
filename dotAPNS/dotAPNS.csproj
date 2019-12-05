@@ -6,8 +6,13 @@
     <Company></Company>
     <Description>dotAPNS is a library used to send push notifications to Apple devices using Apple Push Notification service.</Description>
     <Copyright>Copyright © alexalok 2019</Copyright>
-    <Version>1.0.7</Version>
-    <PackageReleaseNotes></PackageReleaseNotes>
+    <Version>1.0.8</Version>
+    <PackageReleaseNotes>First public release.</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/alexalok/dotAPNS</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/alexalok/dotAPNS</RepositoryUrl>
+    <PackageTags>APNs, Apple Push Notification service</PackageTags>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>

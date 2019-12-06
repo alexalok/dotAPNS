@@ -1,0 +1,5 @@
+language: csharp
+solution: dotAPNS.sln
+
+script:
+ - msbuild /p:Configuration=Release /restore

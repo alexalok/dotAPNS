@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -142,12 +142,25 @@ namespace dotAPNS
         {
             if (cert == null) throw new ArgumentNullException(nameof(cert));
 
+#if NETSTANDARD1_4
             var handler = new HttpClientHandler();
             handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+#elif NET46
+            var handler = new WinHttpHandler();
+            handler.ClientCertificateOption = ClientCertificateOption.Manual;
+#endif
             handler.ClientCertificates.Add(cert);
             var client = new HttpClient(handler);
 
-            var apns = new ApnsClient(client, cert);
+            return CreateUsingCustomHttpClient(client, cert);
+        }
+
+        public static ApnsClient CreateUsingCustomHttpClient([NotNull] HttpClient httpClient, [NotNull] X509Certificate2 cert)
+        {
+            if (httpClient == null) throw new ArgumentNullException(nameof(httpClient));
+            if (cert == null) throw new ArgumentNullException(nameof(cert));
+
+            var apns = new ApnsClient(httpClient, cert);
             return apns;
         }
 
@@ -193,11 +206,17 @@ namespace dotAPNS
 
             using (var dsa = new ECDsaCng(_key))
             {
+#if NET46
                 dsa.HashAlgorithm = CngAlgorithm.Sha256;
+#endif
                 string headerBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(header));
-                string payloadBasae64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
-                string unsignedJwtData = $"{headerBase64}.{payloadBasae64}";
+                string payloadBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
+                string unsignedJwtData = $"{headerBase64}.{payloadBase64}";
+#if NETSTANDARD1_4
+                var signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData), HashAlgorithmName.SHA256);
+#elif NET46
                 var signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData));
+#endif
                 _jwt = $"{unsignedJwtData}.{Convert.ToBase64String(signature)}";
             }
             _lastJwtGenerationTime = now.UtcDateTime;

@@ -45,7 +45,7 @@ namespace dotAPNS
         readonly string _bundleId;
         bool _useSandbox;
 
-        ApnsClient(HttpClient http, [NotNull] X509Certificate cert)
+        public ApnsClient(HttpClient http, [NotNull] X509Certificate cert)
         {
             _http = http;
             var split = cert.Subject.Split(new[] { "0.9.2342.19200300.100.1.1=" }, StringSplitOptions.RemoveEmptyEntries);

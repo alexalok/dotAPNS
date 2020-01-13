@@ -14,6 +14,10 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+#if !NET46
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.OpenSsl;
+#endif
 
 namespace dotAPNS
 {
@@ -27,7 +31,12 @@ namespace dotAPNS
         const string DevelopmentEndpoint = "https://api.development.push.apple.com:443/3/device/";
         const string ProductionEndpoint = "https://api.push.apple.com:443/3/device/";
 
+#if NET46
         readonly CngKey _key;
+#else
+        readonly ECDsa _key;
+#endif
+
         readonly string _keyId;
         readonly string _teamId;
 
@@ -57,7 +66,13 @@ namespace dotAPNS
             _useCert = true;
         }
 
-        ApnsClient([NotNull] HttpClient http, [NotNull] CngKey key, [NotNull] string keyId, [NotNull] string teamId, [NotNull] string bundleId)
+        ApnsClient([NotNull] HttpClient http, [NotNull]
+#if NET46 
+                   CngKey
+#else
+                   ECDsa
+#endif
+                   key, [NotNull] string keyId, [NotNull] string teamId, [NotNull] string bundleId)
         {
             _http = http ?? throw new ArgumentNullException(nameof(http));
             _key = key ?? throw new ArgumentNullException(nameof(key));
@@ -134,7 +149,18 @@ namespace dotAPNS
             }
 
             string base64 = string.Join("", certContent);
+
+#if !NET46
+            base64 = $"-----BEGIN PRIVATE KEY-----\n{base64}\n-----END PRIVATE KEY-----";
+            var ecPrivateKeyParameters = (ECPrivateKeyParameters)new PemReader(new StringReader(base64)).ReadObject();
+            var x = ecPrivateKeyParameters.Parameters.G.AffineXCoord.GetEncoded();
+            var y = ecPrivateKeyParameters.Parameters.G.AffineYCoord.GetEncoded();
+            var d = ecPrivateKeyParameters.D.ToByteArrayUnsigned();
+            var msEcp = new ECParameters { Curve = ECCurve.NamedCurves.nistP256, Q = { X = x, Y = y }, D = d };
+            var key = ECDsa.Create(msEcp);
+#else
             var key = CngKey.Import(Convert.FromBase64String(base64), CngKeyBlobFormat.Pkcs8PrivateBlob);
+#endif
             return new ApnsClient(http, key, options.KeyId, options.TeamId, options.BundleId);
         }
 
@@ -206,23 +232,22 @@ namespace dotAPNS
             string header = JsonConvert.SerializeObject((new { alg = "ES256", kid = _keyId }));
             string payload = JsonConvert.SerializeObject(new { iss = _teamId, iat = now.ToUnixTimeSeconds() });
 
+            string headerBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(header));
+            string payloadBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
+            string unsignedJwtData = $"{headerBase64}.{payloadBase64}";
+
+            byte[] signature;
+#if NET46
             using (var dsa = new ECDsaCng(_key))
             {
-#if NET46
                 dsa.HashAlgorithm = CngAlgorithm.Sha256;
-#endif
-                string headerBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(header));
-                string payloadBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
-                string unsignedJwtData = $"{headerBase64}.{payloadBase64}";
-#if NETSTANDARD
-                var signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData), HashAlgorithmName.SHA256);
-#elif NET46
-                var signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData));
-#endif
-                _jwt = $"{unsignedJwtData}.{Convert.ToBase64String(signature)}";
+                signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData));
             }
+#else
+            signature = _key.SignData(Encoding.UTF8.GetBytes(unsignedJwtData), HashAlgorithmName.SHA256);
+#endif
+            _jwt = $"{unsignedJwtData}.{Convert.ToBase64String(signature)}";
             _lastJwtGenerationTime = now.UtcDateTime;
-
             return _jwt;
         }
     }

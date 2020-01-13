@@ -140,19 +140,21 @@ namespace dotAPNS
 
         public static ApnsClient CreateUsingCert([NotNull] X509Certificate2 cert)
         {
+#if NETSTANDARD2_0 || NET46
+            throw new NotSupportedException(
+                "Certificate-based connection is not supported on all .NET Framework versions and on .NET Core 2.x or lower. " +
+                "For more information, see: https://github.com/alexalok/dotAPNS/issues/6");
+#elif NETSTANDARD2_1
             if (cert == null) throw new ArgumentNullException(nameof(cert));
 
-#if NETSTANDARD1_4
             var handler = new HttpClientHandler();
             handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-#elif NET46
-            var handler = new WinHttpHandler();
-            handler.ClientCertificateOption = ClientCertificateOption.Manual;
-#endif
+
             handler.ClientCertificates.Add(cert);
             var client = new HttpClient(handler);
 
             return CreateUsingCustomHttpClient(client, cert);
+#endif
         }
 
         public static ApnsClient CreateUsingCustomHttpClient([NotNull] HttpClient httpClient, [NotNull] X509Certificate2 cert)
@@ -212,7 +214,7 @@ namespace dotAPNS
                 string headerBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(header));
                 string payloadBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
                 string unsignedJwtData = $"{headerBase64}.{payloadBase64}";
-#if NETSTANDARD1_4
+#if NETSTANDARD
                 var signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData), HashAlgorithmName.SHA256);
 #elif NET46
                 var signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData));

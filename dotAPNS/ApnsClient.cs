@@ -59,7 +59,12 @@ namespace dotAPNS
             _http = http;
             var split = cert.Subject.Split(new[] { "0.9.2342.19200300.100.1.1=" }, StringSplitOptions.RemoveEmptyEntries);
             if (split.Length != 2)
-                throw new InvalidOperationException("Provided certificate does not appear to be a valid APNs certificate.");
+            {
+                // On Linux .NET Core cert.Subject prints `userId=xxx` instead of `0.9.2342.19200300.100.1.1=xxx`
+                split = cert.Subject.Split(new[] { "userId=" }, StringSplitOptions.RemoveEmptyEntries);
+                if (split.Length != 2)
+                    throw new InvalidOperationException("Provided certificate does not appear to be a valid APNs certificate.");
+            }
             string topic = split[1];
             _isVoipCert = topic.EndsWith(".voip");
             _bundleId = split[1].Replace(".voip", "");

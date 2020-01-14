@@ -1,26 +1,44 @@
 ﻿using System;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using dotAPNS.AspNetCore;
 using Moq;
 using Moq.Protected;
 using Xunit;
 
 namespace dotAPNS.Tests
 {
+    [Collection("certs")]
     public class ApnsClient_Tests
     {
-        const string CertContent = "-----BEGIN PRIVATE KEY-----\r\nMIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgir767IOFOYHsYtNQ\r\nwsvLeJVu3bxCLL/SURQvMZw6QumgCgYIKoZIzj0DAQehRANCAARuwGOLtHY99zLl\r\niyACJp6xmj6YfE8bOLxHTZGkoC/+yNgf/fBpwf5Nin2pzyM8FUOYXg1R1v2bQqJy\r\nwHYtSkc1\r\n-----END PRIVATE KEY-----";
+        readonly CertificateFixture _certs;
+
+        public ApnsClient_Tests(CertificateFixture certs)
+        {
+            _certs = certs;
+        }
 
         [Fact]
         public void Sending_NonVoip_Type_With_Voip_Cert_Fails()
         {
-            var apns = ApnsClient.CreateUsingCert("voip.p12");
+#if !NETCOREAPP3_0
+            return;
+#endif
+            var apns = ApnsClient.CreateUsingCert(_certs.P12Cert);
             var push = ApplePush.CreateAlert(new ApplePushAlert("title", "body")).AddToken("token");
 
             Assert.ThrowsAsync<InvalidOperationException>(async () => await apns.Send(push));
+        }
+
+        public void Creating_Client_With_Cert_Not_Fails_Only_On_NetCore3_0()
+        {
+#if !NETCOREAPP3_0
+            Assert.Throws<NotSupportedException>(() => ApnsClient.CreateUsingCert(_certs.P12Cert));
+#else
+            ApnsClient.CreateUsingCert(_certs.P12Cert);
+#endif
         }
 
         [Fact]
@@ -46,7 +64,7 @@ namespace dotAPNS.Tests
                     Content = new JsonContent("{}")
                 });
 
-            var client = ApnsClient.CreateUsingJwt(new HttpClient(httpHandler.Object), new ApnsJwtOptions() {BundleId = "bundle", CertContent = CertContent, KeyId = "key", TeamId = "team"});
+            var client = ApnsClient.CreateUsingJwt(new HttpClient(httpHandler.Object), new ApnsJwtOptions() { BundleId = "bundle", CertContent = _certs.P8CertData, KeyId = "key", TeamId = "team" });
             return client;
         }
     }

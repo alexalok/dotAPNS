@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#if !NET46
+using System.Collections;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -13,9 +14,15 @@ using Xunit;
 
 namespace dotAPNS.Tests
 {
+    [Collection("certs")]
     public class ApnsService_Tests
     {
-        const string CertContent = "-----BEGIN PRIVATE KEY-----\r\nMIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgir767IOFOYHsYtNQ\r\nwsvLeJVu3bxCLL/SURQvMZw6QumgCgYIKoZIzj0DAQehRANCAARuwGOLtHY99zLl\r\niyACJp6xmj6YfE8bOLxHTZGkoC/+yNgf/fBpwf5Nin2pzyM8FUOYXg1R1v2bQqJy\r\nwHYtSkc1\r\n-----END PRIVATE KEY-----";
+        readonly CertificateFixture _certs;
+
+        public ApnsService_Tests(CertificateFixture certs)
+        {
+            _certs = certs;
+        }
 
         [Fact]
         public async Task Ensure_Client_Caching_Works_With_Jwt()
@@ -26,14 +33,14 @@ namespace dotAPNS.Tests
                 KeyId = "1234567890",
                 TeamId = "1234567890",
                 BundleId = "bundleid1",
-                CertContent = CertContent
+                CertContent = _certs.P8CertData
             };
             var jwtOpt2 = new ApnsJwtOptions()
             {
                 KeyId = "1234567890",
                 TeamId = "1234567890",
                 BundleId = "bundleid2",
-                CertContent = CertContent
+                CertContent = _certs.P8CertData
             };
             var firstPush = ApplePush.CreateContentAvailable().AddToken("token");
             var secondPush = ApplePush.CreateAlert(new ApplePushAlert(null, "body")).AddToken("token");
@@ -55,11 +62,12 @@ namespace dotAPNS.Tests
             var firstPush = ApplePush.CreateContentAvailable().AddToken("token");
             var secondPush = ApplePush.CreateAlert(new ApplePushAlert(null, "body")).AddToken("token");
 
-            await service.SendPush(firstPush, new X509Certificate2("voip.p12"));
-            await service.SendPush(secondPush, new X509Certificate2("voip.p12"));
+            await service.SendPush(firstPush, _certs.P12Cert);
+            await service.SendPush(secondPush, _certs.P12Cert);
 
             Assert.Single((IDictionary)service.GetType().GetField("_cachedJwtClients", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service));
         }
+
 
         ApnsService BoostrapApnsService()
         {
@@ -77,5 +85,7 @@ namespace dotAPNS.Tests
             var service = new ApnsService(apnsClientFactory);
             return service;
         }
+
     }
 }
+#endif

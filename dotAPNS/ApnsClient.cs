@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -14,6 +14,10 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+#if !NET46
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.OpenSsl;
+#endif
 
 namespace dotAPNS
 {
@@ -27,7 +31,12 @@ namespace dotAPNS
         const string DevelopmentEndpoint = "https://api.development.push.apple.com:443/3/device/";
         const string ProductionEndpoint = "https://api.push.apple.com:443/3/device/";
 
+#if NET46
         readonly CngKey _key;
+#else
+        readonly ECDsa _key;
+#endif
+
         readonly string _keyId;
         readonly string _teamId;
 
@@ -50,14 +59,25 @@ namespace dotAPNS
             _http = http;
             var split = cert.Subject.Split(new[] { "0.9.2342.19200300.100.1.1=" }, StringSplitOptions.RemoveEmptyEntries);
             if (split.Length != 2)
-                throw new InvalidOperationException("Provided certificate does not appear to be a valid APNs certificate.");
+            {
+                // On Linux .NET Core cert.Subject prints `userId=xxx` instead of `0.9.2342.19200300.100.1.1=xxx`
+                split = cert.Subject.Split(new[] { "userId=" }, StringSplitOptions.RemoveEmptyEntries);
+                if (split.Length != 2)
+                    throw new InvalidOperationException("Provided certificate does not appear to be a valid APNs certificate.");
+            }
             string topic = split[1];
             _isVoipCert = topic.EndsWith(".voip");
             _bundleId = split[1].Replace(".voip", "");
             _useCert = true;
         }
 
-        ApnsClient([NotNull] HttpClient http, [NotNull] CngKey key, [NotNull] string keyId, [NotNull] string teamId, [NotNull] string bundleId)
+        ApnsClient([NotNull] HttpClient http, [NotNull]
+#if NET46 
+                   CngKey
+#else
+                   ECDsa
+#endif
+                   key, [NotNull] string keyId, [NotNull] string teamId, [NotNull] string bundleId)
         {
             _http = http ?? throw new ArgumentNullException(nameof(http));
             _key = key ?? throw new ArgumentNullException(nameof(key));
@@ -113,41 +133,69 @@ namespace dotAPNS
             if (http == null) throw new ArgumentNullException(nameof(http));
             if (options == null) throw new ArgumentNullException(nameof(options));
 
-            IEnumerable<string> certContent;
+            string certContent;
             if (options.CertFilePath != null)
             {
                 Debug.Assert(options.CertContent == null);
-                certContent = File.ReadAllLines(options.CertFilePath)
-                    .Where(l => !l.StartsWith("-"));
+                certContent = File.ReadAllText(options.CertFilePath);
             }
             else if (options.CertContent != null)
             {
                 Debug.Assert(options.CertFilePath == null);
-                string delimeter = options.CertContent.Contains("\r\n") ? "\r\n" : "\n";
-                certContent = options.CertContent
-                    .Split(new[] { delimeter }, StringSplitOptions.RemoveEmptyEntries)
-                    .Where(l => !l.StartsWith("-"));
             }
             else
             {
                 throw new ArgumentException("Either certificate file path or certificate contents must be provided.", nameof(options));
             }
 
-            string base64 = string.Join("", certContent);
-            var key = CngKey.Import(Convert.FromBase64String(base64), CngKeyBlobFormat.Pkcs8PrivateBlob);
+            certContent = options.CertContent.Replace("\r", "").Replace("\n", "")
+                .Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "");
+
+#if !NET46
+            certContent = $"-----BEGIN PRIVATE KEY-----\n{certContent}\n-----END PRIVATE KEY-----";
+            var ecPrivateKeyParameters = (ECPrivateKeyParameters)new PemReader(new StringReader(certContent)).ReadObject();
+            // See https://github.com/dotnet/core/issues/2037#issuecomment-436340605 as to why we calculate q ourselves
+            // TL;DR: we don't have Q coords in ecPrivateKeyParameters, only G ones. They won't work.
+            var q = ecPrivateKeyParameters.Parameters.G.Multiply(ecPrivateKeyParameters.D).Normalize();
+            var d = ecPrivateKeyParameters.D.ToByteArrayUnsigned();
+            var msEcp = new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP256,
+                Q = { X = q.AffineXCoord.GetEncoded(), Y = q.AffineYCoord.GetEncoded() }, 
+                D = d
+            };
+            var key = ECDsa.Create(msEcp);
+#else
+            var key = CngKey.Import(Convert.FromBase64String(certContent), CngKeyBlobFormat.Pkcs8PrivateBlob);
+#endif
             return new ApnsClient(http, key, options.KeyId, options.TeamId, options.BundleId);
         }
 
         public static ApnsClient CreateUsingCert([NotNull] X509Certificate2 cert)
         {
+#if NETSTANDARD2_0 || NET46
+            throw new NotSupportedException(
+                "Certificate-based connection is not supported on all .NET Framework versions and on .NET Core 2.x or lower. " +
+                "For more information, see: https://github.com/alexalok/dotAPNS/issues/6");
+#elif NETSTANDARD2_1
             if (cert == null) throw new ArgumentNullException(nameof(cert));
 
             var handler = new HttpClientHandler();
             handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+
             handler.ClientCertificates.Add(cert);
             var client = new HttpClient(handler);
 
-            var apns = new ApnsClient(client, cert);
+            return CreateUsingCustomHttpClient(client, cert);
+#endif
+        }
+
+        public static ApnsClient CreateUsingCustomHttpClient([NotNull] HttpClient httpClient, [NotNull] X509Certificate2 cert)
+        {
+            if (httpClient == null) throw new ArgumentNullException(nameof(httpClient));
+            if (cert == null) throw new ArgumentNullException(nameof(cert));
+
+            var apns = new ApnsClient(httpClient, cert);
             return apns;
         }
 
@@ -191,17 +239,22 @@ namespace dotAPNS
             string header = JsonConvert.SerializeObject((new { alg = "ES256", kid = _keyId }));
             string payload = JsonConvert.SerializeObject(new { iss = _teamId, iat = now.ToUnixTimeSeconds() });
 
+            string headerBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(header));
+            string payloadBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
+            string unsignedJwtData = $"{headerBase64}.{payloadBase64}";
+
+            byte[] signature;
+#if NET46
             using (var dsa = new ECDsaCng(_key))
             {
                 dsa.HashAlgorithm = CngAlgorithm.Sha256;
-                string headerBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(header));
-                string payloadBasae64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
-                string unsignedJwtData = $"{headerBase64}.{payloadBasae64}";
-                var signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData));
-                _jwt = $"{unsignedJwtData}.{Convert.ToBase64String(signature)}";
+                signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData));
             }
+#else
+            signature = _key.SignData(Encoding.UTF8.GetBytes(unsignedJwtData), HashAlgorithmName.SHA256);
+#endif
+            _jwt = $"{unsignedJwtData}.{Convert.ToBase64String(signature)}";
             _lastJwtGenerationTime = now.UtcDateTime;
-
             return _jwt;
         }
     }

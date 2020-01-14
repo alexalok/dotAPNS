@@ -1,25 +1,36 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>net46;netstandard2.0;netstandard2.1</TargetFrameworks>
     <Authors>alexalok</Authors>
     <Company></Company>
     <Description>dotAPNS is a library used to send push notifications to Apple devices using Apple Push Notification service.</Description>
     <Copyright>Copyright © alexalok 2019</Copyright>
-    <Version>1.0.8</Version>
-    <PackageReleaseNotes>First public release.</PackageReleaseNotes>
+    <Version>1.0.15</Version>
+    <PackageReleaseNotes>* Retargeted from netstandard2.0 to netstandard1.4
+* Added net46 target (requires recent Windows 10 version)
+* Removed some unnecessary dependencies</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/alexalok/dotAPNS</PackageProjectUrl>
     <RepositoryUrl>https://github.com/alexalok/dotAPNS</RepositoryUrl>
     <PackageTags>APNs, Apple Push Notification service</PackageTags>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="2019.1.3" />
-    <PackageReference Include="Microsoft.CSharp" Version="4.6.0" />
+    <PackageReference Include="JetBrains.Annotations" Version="2019.1.3" PrivateAssets="All" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="System.Security.Cryptography.Cng" Version="4.6.1" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))">
+    <PackageReference Include="BouncyCastle " Version="1.8.5" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
+    <PackageReference Include="System.Net.Http.WinHttpHandler" Version="4.7.0" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
 
 </Project>

@@ -2,12 +2,17 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Authors>alexalok</Authors>
-    <Company />
-    <Description>Contains classes allowing for usage of dotAPNS package in ASP.NET Core 3 projects.</Description>
-    <Copyright>Copyright © alexalok 2019</Copyright>
+    <Description>Contains classes allowing for usage of dotAPNS package in ASP.NET Core projects.</Description>
+    <Copyright>Copyright © alexalok 2019-2020</Copyright>
+    <Version>2.0.0</Version>
+    <PackageReleaseNotes>Retargeted to netstandard2.0</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/alexalok/dotAPNS</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/alexalok/dotAPNS</RepositoryUrl>
+    <PackageTags>APNs, Apple Push Notification service</PackageTags>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>

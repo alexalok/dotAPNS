@@ -99,6 +99,7 @@ Check out for more examples [here](https://github.com/alexalok/dotAPNS/tree/mast
 ---
 
 # dotAPNS ASP.NET Core integration
+[![NuGet](https://img.shields.io/nuget/v/dotAPNS.AspNetCore?style=plastic)](https://www.nuget.org/packages/dotAPNS.AspNetCore/ "NuGet")
 
 **dotAPNS.AspNetCore** is a library containing **ApnsService** class and some helpers methods to simplify its usage.
 

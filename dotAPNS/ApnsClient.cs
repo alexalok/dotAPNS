@@ -133,38 +133,40 @@ namespace dotAPNS
             if (http == null) throw new ArgumentNullException(nameof(http));
             if (options == null) throw new ArgumentNullException(nameof(options));
 
-            IEnumerable<string> certContent;
+            string certContent;
             if (options.CertFilePath != null)
             {
                 Debug.Assert(options.CertContent == null);
-                certContent = File.ReadAllLines(options.CertFilePath)
-                    .Where(l => !l.StartsWith("-"));
+                certContent = File.ReadAllText(options.CertFilePath);
             }
             else if (options.CertContent != null)
             {
                 Debug.Assert(options.CertFilePath == null);
-                string delimeter = options.CertContent.Contains("\r\n") ? "\r\n" : "\n";
-                certContent = options.CertContent
-                    .Split(new[] { delimeter }, StringSplitOptions.RemoveEmptyEntries)
-                    .Where(l => !l.StartsWith("-"));
             }
             else
             {
                 throw new ArgumentException("Either certificate file path or certificate contents must be provided.", nameof(options));
             }
 
-            string base64 = string.Join("", certContent);
+            certContent = options.CertContent.Replace("\r", "").Replace("\n", "")
+                .Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "");
 
 #if !NET46
-            base64 = $"-----BEGIN PRIVATE KEY-----\n{base64}\n-----END PRIVATE KEY-----";
-            var ecPrivateKeyParameters = (ECPrivateKeyParameters)new PemReader(new StringReader(base64)).ReadObject();
-            var x = ecPrivateKeyParameters.Parameters.G.AffineXCoord.GetEncoded();
-            var y = ecPrivateKeyParameters.Parameters.G.AffineYCoord.GetEncoded();
+            certContent = $"-----BEGIN PRIVATE KEY-----\n{certContent}\n-----END PRIVATE KEY-----";
+            var ecPrivateKeyParameters = (ECPrivateKeyParameters)new PemReader(new StringReader(certContent)).ReadObject();
+            // See https://github.com/dotnet/core/issues/2037#issuecomment-436340605 as to why we calculate q ourselves
+            // TL;DR: we don't have Q coords in ecPrivateKeyParameters, only G ones. They won't work.
+            var q = ecPrivateKeyParameters.Parameters.G.Multiply(ecPrivateKeyParameters.D).Normalize();
             var d = ecPrivateKeyParameters.D.ToByteArrayUnsigned();
-            var msEcp = new ECParameters { Curve = ECCurve.NamedCurves.nistP256, Q = { X = x, Y = y }, D = d };
+            var msEcp = new ECParameters
+            {
+                Curve = ECCurve.NamedCurves.nistP256,
+                Q = { X = q.AffineXCoord.GetEncoded(), Y = q.AffineYCoord.GetEncoded() }, 
+                D = d
+            };
             var key = ECDsa.Create(msEcp);
 #else
-            var key = CngKey.Import(Convert.FromBase64String(base64), CngKeyBlobFormat.Pkcs8PrivateBlob);
+            var key = CngKey.Import(Convert.FromBase64String(certContent), CngKeyBlobFormat.Pkcs8PrivateBlob);
 #endif
             return new ApnsClient(http, key, options.KeyId, options.TeamId, options.BundleId);
         }

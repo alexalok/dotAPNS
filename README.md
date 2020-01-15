@@ -3,9 +3,7 @@
 
 dotAPNS is a small library used to send pushes to Apple devices via the [HTTP/2 APNs API](https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server), which is an officially recommended way of interacting with APNs (*Apple Push Notification service*).
 
-dotAPNS itself targets **netstandard2.0**, while dotAPNS ASP.NET Core integration library targets **netcoreapp3.0**. The latter, however, is not needed to use the main library - it just provides some infrastructure helpers to ease the integration of the library into ASP.NET Core projects.
-
-
+dotAPNS itself targets **.NET Framework 4.6, netstandard2.0 and netstandard2.1**, while dotAPNS ASP.NET Core integration library targets **netstandard2.0**. The latter, however, is not needed to use the main library - it just provides some infrastructure helpers to ease the integration of the library into ASP.NET Core projects.
 
 ## 🛠️ How to use it?
 
@@ -18,6 +16,8 @@ dotAPNS itself targets **netstandard2.0**, while dotAPNS ASP.NET Core integratio
 
 
 ## 📃 Certificate-based connection
+
+**Important:** dotAPNS supports certificate-based connection only on .NET Core 3.0 and above. Full .NET Framework and .NET Core 2.2 and below are not supported! [(Why?)](https://github.com/alexalok/dotAPNS/issues/6)
 
 ```c#
 var apns = ApnsClient.CreateUsingCert("voip.p12");
@@ -33,6 +33,8 @@ Change `voip.p12` so that it points to the certificate you are intended to use.
 **Note:** dotAPNS supports certificates only in x509 format. You might have to convert the certificate you download from Developer Center to the supported format.
 
 ## 🔏 Token-based connection
+
+**Important:** on .NET Core 2.0, 2.1 and 2.2 you need to execute the following code once before using library: `AppContext.SetSwitch("System.Net.Http.UseSocketsHttpHandler", false);`. Again, this needs to be called only *once*.
 
 First, you need to specify some options that the library will use to create an authentication token:
 
@@ -92,7 +94,7 @@ else if(response?.IsSuccessful == null)
     Console.WriteLine("Cannot send push because APNs service is unreachable.");
 ```
 
-Check out for more examples [here](https://github.com/alexalok/dotAPNS/tree/master/dotAPNS.Tests).
+Check out more examples [here](https://github.com/alexalok/dotAPNS/tree/master/dotAPNS.Tests).
 
 
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
@@ -8,10 +8,10 @@ namespace dotAPNS.AspNetCore
 {
     public interface IApnsService
     {
-        Task<ApnsResponse> SendPush(ApplePush push, X509Certificate2 cert);
-        Task<ApnsResponse> SendPush(ApplePush push, ApnsJwtOptions jwtOptions);
-        Task<List<ApnsResponse>> SendPushes(IReadOnlyCollection<ApplePush> pushes, X509Certificate2 cert);
-        Task<List<ApnsResponse>> SendPushes(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions jwtOptions);
+        Task<ApnsResponse> SendPush(ApplePush push, X509Certificate2 cert, bool useSandbox = false);
+        Task<ApnsResponse> SendPush(ApplePush push, ApnsJwtOptions jwtOptions, bool useSandbox = false);
+        Task<List<ApnsResponse>> SendPushes(IReadOnlyCollection<ApplePush> pushes, X509Certificate2 cert, bool useSandbox = false);
+        Task<List<ApnsResponse>> SendPushes(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions jwtOptions, bool useSandbox = false);
     }
 
     public class ApnsService : IApnsService
@@ -19,45 +19,52 @@ namespace dotAPNS.AspNetCore
         readonly IApnsClientFactory _apnsClientFactory;
 
         // TODO implement expiration policy
-        readonly ConcurrentDictionary<string, IApnsClient> _cachedCertClients = new ConcurrentDictionary<string, IApnsClient>(); // key is cert thumbprint
-        readonly ConcurrentDictionary<string, IApnsClient> _cachedJwtClients = new ConcurrentDictionary<string, IApnsClient>(); // key is bundle id
+        readonly ConcurrentDictionary<string, IApnsClient> _cachedCertClients = new ConcurrentDictionary<string, IApnsClient>(); // key is cert thumbprint and sandbox prefix
+        readonly ConcurrentDictionary<string, IApnsClient> _cachedJwtClients = new ConcurrentDictionary<string, IApnsClient>(); // key is bundle id and sandbox prefix
 
         public ApnsService(IApnsClientFactory apnsClientFactory)
         {
             _apnsClientFactory = apnsClientFactory;
         }
 
-        public Task<ApnsResponse> SendPush(ApplePush push, X509Certificate2 cert)
+        public Task<ApnsResponse> SendPush(ApplePush push, X509Certificate2 cert, bool useSandbox = false)
         {
-            var client = GetOrCreateCached(cert);
+            string clientCacheId = (useSandbox ? "s_" : "") + cert.Thumbprint;
+            var client = _cachedCertClients.GetOrAdd(clientCacheId, _ => _apnsClientFactory.CreateUsingCert(cert, useSandbox));
+
             try
             {
                 return client.Send(push);
             }
             catch
             {
-                _cachedCertClients.TryRemove(cert.Thumbprint, out _);
+                _cachedCertClients.TryRemove(clientCacheId, out _);
                 throw;
             }
         }
 
-        public Task<ApnsResponse> SendPush(ApplePush push, ApnsJwtOptions jwtOptions)
+        public Task<ApnsResponse> SendPush(ApplePush push, ApnsJwtOptions jwtOptions, bool useSandbox = false)
         {
-            var client = GetOrCreateCached(jwtOptions);
+            string clientCacheId = (useSandbox ? "s_" : "") + jwtOptions.BundleId;
+            var client = _cachedJwtClients.GetOrAdd(clientCacheId, _ => _apnsClientFactory.CreateUsingJwt(jwtOptions, useSandbox));
             try
             {
                 return client.Send(push);
             }
             catch
             {
-                _cachedJwtClients.TryRemove(jwtOptions.BundleId, out _);
+                _cachedJwtClients.TryRemove(clientCacheId, out _);
                 throw;
             }
         }
 
-        public async Task<List<ApnsResponse>> SendPushes(IReadOnlyCollection<ApplePush> pushes, X509Certificate2 cert) //TODO implement concurrent sendings
+        public async Task<List<ApnsResponse>> SendPushes(IReadOnlyCollection<ApplePush> pushes, X509Certificate2 cert, bool useSandbox = false) //TODO implement concurrent sendings
         {
-            var client = GetOrCreateCached(cert);
+            if (string.IsNullOrWhiteSpace(cert.Thumbprint))
+                throw new InvalidOperationException("Certificate does not have a thumbprint.");
+
+            string clientCacheId = (useSandbox ? "s_" : "") + cert.Thumbprint;
+            var client = _cachedCertClients.GetOrAdd(clientCacheId, _ => _apnsClientFactory.CreateUsingCert(cert, useSandbox));
 
             var result = new List<ApnsResponse>(pushes.Count);
             try
@@ -73,9 +80,10 @@ namespace dotAPNS.AspNetCore
             }
         }
 
-        public async Task<List<ApnsResponse>> SendPushes(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions jwtOptions)
+        public async Task<List<ApnsResponse>> SendPushes(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions jwtOptions, bool useSandbox = false)
         {
-            var client = GetOrCreateCached(jwtOptions);
+            string clientCacheId = (useSandbox ? "s_" : "") + jwtOptions.BundleId;
+            var client = _cachedJwtClients.GetOrAdd(clientCacheId, _ => _apnsClientFactory.CreateUsingJwt(jwtOptions, useSandbox));
             var result = new List<ApnsResponse>(pushes.Count);
             try
             {
@@ -85,16 +93,9 @@ namespace dotAPNS.AspNetCore
             }
             catch
             {
-                _cachedJwtClients.TryRemove(jwtOptions.BundleId, out _);
+                _cachedJwtClients.TryRemove(clientCacheId, out _);
                 throw;
             }
         }
-
-        IApnsClient GetOrCreateCached(X509Certificate2 cert) =>
-            _cachedCertClients.GetOrAdd(cert.Thumbprint ?? throw new InvalidOperationException("Certificate does not have a thumbprint."),
-                _ => _apnsClientFactory.CreateUsingCert(cert));
-
-        IApnsClient GetOrCreateCached(ApnsJwtOptions jwtOptions) =>
-            _cachedJwtClients.GetOrAdd(jwtOptions.BundleId, _ => _apnsClientFactory.CreateUsingJwt(jwtOptions));
     }
 }

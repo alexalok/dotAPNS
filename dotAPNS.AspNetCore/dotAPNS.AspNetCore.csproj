@@ -6,8 +6,8 @@
     <Authors>alexalok</Authors>
     <Description>Contains classes allowing for usage of dotAPNS package in ASP.NET Core projects.</Description>
     <Copyright>Copyright © alexalok 2019-2020</Copyright>
-    <Version>2.0.0</Version>
-    <PackageReleaseNotes>Retargeted to netstandard2.0</PackageReleaseNotes>
+    <Version>2.1.0</Version>
+    <PackageReleaseNotes>Factory and service now support sending pushes to sandbox.</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/alexalok/dotAPNS</PackageProjectUrl>
     <RepositoryUrl>https://github.com/alexalok/dotAPNS</RepositoryUrl>
     <PackageTags>APNs, Apple Push Notification service</PackageTags>

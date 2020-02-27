@@ -39,6 +39,11 @@ namespace dotAPNS
         public bool IsContentAvailable { get; private set; }
 
         /// <summary>
+        /// User-defined properties that are sent in the payload.
+        /// </summary>
+        public Dictionary<string, object> CustomProperties { get; set; }
+
+        /// <summary>
         /// Indicates whether push must be sent with 'voip' type. If false, push is sent with its default type.
         /// </summary>
         bool _sendAsVoipType;
@@ -133,6 +138,14 @@ namespace dotAPNS
             return this;
         }
 
+        public ApplePush AddCustomProperty(string key, object value)
+        {
+            if(CustomProperties == null)
+                CustomProperties = new Dictionary<string, object>();
+            CustomProperties.Add(key, value);
+            return this;
+        }
+
         void EnsureTokensNotExistGuard()
         {
             if (!(string.IsNullOrEmpty(Token) && string.IsNullOrEmpty(VoipToken)))
@@ -174,6 +187,13 @@ namespace dotAPNS
 
             if (Location != null)
                 payload.aps.Location = Location;
+
+            if (CustomProperties != null)
+            {
+                IDictionary<string, object> payloadAsDict = payload;
+                foreach (var customProperty in CustomProperties) 
+                    payloadAsDict[customProperty.Key] = customProperty.Value;
+            }
 
             return payload;
         }

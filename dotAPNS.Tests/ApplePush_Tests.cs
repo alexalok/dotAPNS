@@ -1,4 +1,5 @@
 using System;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace dotAPNS.Tests
@@ -83,6 +84,20 @@ namespace dotAPNS.Tests
         {
             var voipPush = ApplePush.CreateContentAvailable(true);
             Assert.Equal(ApplePushType.Voip, voipPush.Type);
+        }
+
+        [Fact]
+        public void AddCustomProperty_Correctly_Adds_String_Value()
+        {
+            var push = ApplePush
+                .CreateAlert("testAlert")
+                .AddCustomProperty("customPropertyKey", "customPropertyValue");
+
+            var payload = push.GeneratePayload();
+            string payloadJson = JsonConvert.SerializeObject(payload);
+
+            const string referencePayloadJson = "{\"aps\":{\"alert\":\"testAlert\"},\"customPropertyKey\":\"customPropertyValue\"}";
+            Assert.Equal(referencePayloadJson, payloadJson);
         }
     }
 }

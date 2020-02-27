@@ -99,5 +99,19 @@ namespace dotAPNS.Tests
             const string referencePayloadJson = "{\"aps\":{\"alert\":\"testAlert\"},\"customPropertyKey\":\"customPropertyValue\"}";
             Assert.Equal(referencePayloadJson, payloadJson);
         }
+
+        [Fact]
+        public void AddCustomProperty_Correctly_Adds_Complex_Value()
+        {
+            var push = ApplePush
+                .CreateAlert("testAlert")
+                .AddCustomProperty("customPropertyKey", new { value1 = "123", value2 = 456 });
+
+            var payload = push.GeneratePayload();
+            string payloadJson = JsonConvert.SerializeObject(payload);
+
+            const string referencePayloadJson = "{\"aps\":{\"alert\":\"testAlert\"},\"customPropertyKey\":{\"value1\":\"123\",\"value2\":456}}";
+            Assert.Equal(referencePayloadJson, payloadJson);
+        }
     }
 }

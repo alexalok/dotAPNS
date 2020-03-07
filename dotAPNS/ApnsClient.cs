@@ -199,12 +199,12 @@ namespace dotAPNS
             return apns;
         }
 
-        public static ApnsClient CreateUsingCert([NotNull] string pathToCert)
+        public static ApnsClient CreateUsingCert([NotNull] string pathToCert, string certPassword = null)
         {
             if (string.IsNullOrWhiteSpace(pathToCert))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(pathToCert));
 
-            var cert = new X509Certificate2(pathToCert);
+            var cert = new X509Certificate2(pathToCert, certPassword);
             return CreateUsingCert(cert);
         }
 

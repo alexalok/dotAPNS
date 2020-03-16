@@ -113,5 +113,14 @@ namespace dotAPNS.Tests
             const string referencePayloadJson = "{\"aps\":{\"alert\":\"testAlert\"},\"customPropertyKey\":{\"value1\":\"123\",\"value2\":456}}";
             Assert.Equal(referencePayloadJson, payloadJson);
         }
+
+        [Fact]
+        public void Setting_Custom_Priority()
+        {
+            var push = ApplePush.CreateContentAvailable();
+            Assert.Equal(5, push.Priority);
+            push.SetPriority(10);
+            Assert.Equal(10, push.Priority);
+        }
     }
 }

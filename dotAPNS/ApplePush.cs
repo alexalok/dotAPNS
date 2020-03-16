@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -10,7 +10,7 @@ namespace dotAPNS
     {
         public string Token { get; private set; }
         public string VoipToken { get; private set; }
-        public int Priority => Type == ApplePushType.Background ? 5 : 10; // 5 for background, 10 for everything else
+        public int Priority => CustomPriority ?? (Type == ApplePushType.Background ? 5 : 10); // 5 for background, 10 for everything else
         public ApplePushType Type
         {
             get
@@ -24,6 +24,11 @@ namespace dotAPNS
                 throw new InvalidOperationException("Cannot determine type for push.");
             }
         }
+
+        /// <summary>
+        /// If specified, this value will be used as a `apns-
+        /// </summary>
+        public int? CustomPriority { get; private set; }
 
         [CanBeNull]
         public ApplePushAlert Alert { get; private set; }
@@ -81,6 +86,14 @@ namespace dotAPNS
         /// <returns></returns>
         public static ApplePush CreateAlert(string alert, bool sendAsVoipType = false) => 
             new ApplePush() { Alert = new ApplePushAlert(null, alert), _sendAsVoipType = sendAsVoipType, _sendAlertAsText = true};
+
+        public ApplePush SetPriority(int priority)
+        {
+            if(priority < 0 || priority > 10)
+                throw new ArgumentOutOfRangeException(nameof(priority), priority, "Priority must be between 0 and 10.");
+            CustomPriority = priority;
+            return this;
+        }
 
         public ApplePush AddBadge(int badge)
         {

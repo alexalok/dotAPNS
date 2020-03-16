@@ -122,5 +122,18 @@ namespace dotAPNS.Tests
             push.SetPriority(10);
             Assert.Equal(10, push.Priority);
         }
+
+        [Fact]
+        public void AddContentAvailable()
+        {
+            var push = new ApplePush(ApplePushType.Background);
+            
+            push.AddContentAvailable();
+
+            var payload = push.GeneratePayload();
+            string payloadJson = JsonConvert.SerializeObject(payload);
+            const string referenceJson = "{\"aps\":{\"content-available\":\"1\"}}";
+            Assert.Equal(referenceJson, payloadJson);
+        }
     }
 }

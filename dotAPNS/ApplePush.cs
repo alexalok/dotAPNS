@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -41,7 +41,7 @@ namespace dotAPNS
         /// </summary>
         bool _sendAlertAsText;
 
-        ApplePush(ApplePushType pushType)
+        public ApplePush(ApplePushType pushType)
         {
             Type = pushType;
         }
@@ -74,6 +74,29 @@ namespace dotAPNS
             var push = CreateAlert(new ApplePushAlert(null, alert), sendAsVoipType);
             push._sendAlertAsText = true;
             return push;
+        }
+
+        /// <summary>
+        /// Add `content-available: 1` to the payload.
+        /// </summary>
+        public ApplePush AddContentAvailable()
+        {
+            IsContentAvailable = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Add alert to the payload.
+        /// </summary>
+        /// <param name="title">Alert title. Can be null.</param>
+        /// <param name="body">Alert body. <b>Cannot be null.</b></param>
+        /// <returns></returns>
+        public ApplePush AddAlert(string title = null, string body = null)
+        {
+            Alert = new ApplePushAlert(title, body);
+            if (title == null)
+                _sendAlertAsText = true;
+            return this;
         }
 
         public ApplePush SetPriority(int priority)

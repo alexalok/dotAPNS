@@ -11,19 +11,7 @@ namespace dotAPNS
         public string Token { get; private set; }
         public string VoipToken { get; private set; }
         public int Priority => CustomPriority ?? (Type == ApplePushType.Background ? 5 : 10); // 5 for background, 10 for everything else
-        public ApplePushType Type
-        {
-            get
-            {
-                if (_sendAsVoipType)
-                    return ApplePushType.Voip;
-                if (IsContentAvailable)
-                    return ApplePushType.Background;
-                if (Alert != null)
-                    return ApplePushType.Alert;
-                throw new InvalidOperationException("Cannot determine type for push.");
-            }
-        }
+        public ApplePushType Type { get; }
 
         /// <summary>
         /// If specified, this value will be used as a `apns-
@@ -49,17 +37,13 @@ namespace dotAPNS
         public Dictionary<string, object> CustomProperties { get; set; }
 
         /// <summary>
-        /// Indicates whether push must be sent with 'voip' type. If false, push is sent with its default type.
-        /// </summary>
-        bool _sendAsVoipType;
-
-        /// <summary>
         /// Indicates whether alert must be sent as a string. 
         /// </summary>
         bool _sendAlertAsText;
 
-        ApplePush()
+        ApplePush(ApplePushType pushType)
         {
+            Type = pushType;
         }
 
         /// <summary>
@@ -67,7 +51,8 @@ namespace dotAPNS
         /// </summary>
         /// <param name="sendAsVoipType">True if push must be sent with 'voip' type rather than 'background'.</param>
         /// <returns></returns>
-        public static ApplePush CreateContentAvailable(bool sendAsVoipType = false) => new ApplePush() { IsContentAvailable = true, _sendAsVoipType = sendAsVoipType };
+        public static ApplePush CreateContentAvailable(bool sendAsVoipType = false) =>
+            new ApplePush(sendAsVoipType ? ApplePushType.Voip : ApplePushType.Background) { IsContentAvailable = true };
 
         /// <summary>
         /// 
@@ -75,8 +60,8 @@ namespace dotAPNS
         /// <param name="alert"></param>
         /// <param name="sendAsVoipType">True if push must be sent with 'voip' type rather than 'alert'.</param>
         /// <returns></returns>
-        public static ApplePush CreateAlert(ApplePushAlert alert, bool sendAsVoipType = false) => 
-            new ApplePush() { Alert = alert, _sendAsVoipType = sendAsVoipType };
+        public static ApplePush CreateAlert(ApplePushAlert alert, bool sendAsVoipType = false) =>
+            new ApplePush(sendAsVoipType ? ApplePushType.Voip : ApplePushType.Alert) { Alert = alert };
 
         /// <summary>
         /// Send alert push with alert as string.
@@ -84,8 +69,12 @@ namespace dotAPNS
         /// <param name="alert"></param>
         /// <param name="sendAsVoipType">True if push must be sent with 'voip' type rather than 'alert'.</param>
         /// <returns></returns>
-        public static ApplePush CreateAlert(string alert, bool sendAsVoipType = false) => 
-            new ApplePush() { Alert = new ApplePushAlert(null, alert), _sendAsVoipType = sendAsVoipType, _sendAlertAsText = true};
+        public static ApplePush CreateAlert(string alert, bool sendAsVoipType = false)
+        {
+            var push = CreateAlert(new ApplePushAlert(null, alert), sendAsVoipType);
+            push._sendAlertAsText = true;
+            return push;
+        }
 
         public ApplePush SetPriority(int priority)
         {
@@ -133,7 +122,7 @@ namespace dotAPNS
                 throw new ArgumentException("Value cannot be null or empty.", nameof(token));
             EnsureTokensNotExistGuard();
             if (Type == ApplePushType.Voip)
-                throw new InvalidOperationException($"Cannot add push token to push that is being sent with 'voip' type.");
+                throw new InvalidOperationException($"Please use AddVoipToken() when sending {nameof(ApplePushType.Voip)} pushes.");
             Token = token;
             return this;
         }
@@ -143,10 +132,8 @@ namespace dotAPNS
             if (string.IsNullOrWhiteSpace(voipToken))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(voipToken));
             EnsureTokensNotExistGuard();
-            if (Alert != null && !_sendAsVoipType)
-                throw new InvalidOperationException("Cannot add voip token to alert push.");
-            if (IsContentAvailable && !_sendAsVoipType)
-                throw new InvalidOperationException($"Cannot add voip token to 'content-available' push that is being sent with '{Type.ToString().ToLowerInvariant()}' type.");
+            if(Type != ApplePushType.Voip)
+                throw new InvalidOperationException($"VoIP token may only be used with {nameof(ApplePushType.Voip)} pushes.");
             VoipToken = voipToken;
             return this;
         }

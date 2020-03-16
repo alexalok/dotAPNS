@@ -51,6 +51,7 @@ namespace dotAPNS
         /// </summary>
         /// <param name="sendAsVoipType">True if push must be sent with 'voip' type rather than 'background'.</param>
         /// <returns></returns>
+        [Obsolete("Please use " + nameof(AddContentAvailable) + " instead.")]
         public static ApplePush CreateContentAvailable(bool sendAsVoipType = false) =>
             new ApplePush(sendAsVoipType ? ApplePushType.Voip : ApplePushType.Background) { IsContentAvailable = true };
 
@@ -60,6 +61,7 @@ namespace dotAPNS
         /// <param name="alert"></param>
         /// <param name="sendAsVoipType">True if push must be sent with 'voip' type rather than 'alert'.</param>
         /// <returns></returns>
+        [Obsolete("Please use " + nameof(AddAlert) + " instead.")]
         public static ApplePush CreateAlert(ApplePushAlert alert, bool sendAsVoipType = false) =>
             new ApplePush(sendAsVoipType ? ApplePushType.Voip : ApplePushType.Alert) { Alert = alert };
 
@@ -69,6 +71,7 @@ namespace dotAPNS
         /// <param name="alert"></param>
         /// <param name="sendAsVoipType">True if push must be sent with 'voip' type rather than 'alert'.</param>
         /// <returns></returns>
+        [Obsolete("Please use " + nameof(AddAlert) + " instead.")]
         public static ApplePush CreateAlert(string alert, bool sendAsVoipType = false)
         {
             var push = CreateAlert(new ApplePushAlert(null, alert), sendAsVoipType);

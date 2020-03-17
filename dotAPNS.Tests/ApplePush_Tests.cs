@@ -135,5 +135,19 @@ namespace dotAPNS.Tests
             const string referenceJson = "{\"aps\":{\"content-available\":\"1\"}}";
             Assert.Equal(referenceJson, payloadJson);
         }
+
+        [Fact]
+        public void Creating_Push_With_ContentAvailable_MutableContent_Alert()
+        {
+            var push = new ApplePush(ApplePushType.Alert)
+                .AddContentAvailable()
+                .AddMutableContent()
+                .AddAlert("title", "body");
+
+            var payload = push.GeneratePayload();
+            string payloadJson = JsonConvert.SerializeObject(payload);
+            const string referenceJson = "{\"aps\":{\"content-available\":\"1\",\"mutable-content\":\"1\",\"alert\":{\"title\":\"title\",\"body\":\"body\"}}}";
+            Assert.Equal(referenceJson, payloadJson);
+        }
     }
 }

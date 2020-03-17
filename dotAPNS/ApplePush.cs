@@ -30,6 +30,8 @@ namespace dotAPNS
         public string Location { get; private set; } // undocumented, but probably works
 
         public bool IsContentAvailable { get; private set; }
+        
+        public bool IsMutableContent { get; private set; }
 
         /// <summary>
         /// User-defined properties that are sent in the payload.
@@ -85,6 +87,16 @@ namespace dotAPNS
         public ApplePush AddContentAvailable()
         {
             IsContentAvailable = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Add `mutable-content: 1` to the payload.
+        /// </summary>
+        /// <returns></returns>
+        public ApplePush AddMutableContent()
+        {
+            IsMutableContent = true;
             return this;
         }
 
@@ -188,12 +200,11 @@ namespace dotAPNS
         {
             dynamic payload = new ExpandoObject();
             payload.aps = new ExpandoObject();
+            IDictionary<string, object> apsAsDict = payload.aps;
             if (IsContentAvailable)
-            {
-                IDictionary<string, object> apsAsDict = payload.aps;
                 apsAsDict["content-available"] = "1";
-                return payload;
-            }
+            if(IsMutableContent)
+                apsAsDict["mutable-content"] = "1";
 
             if (Alert != null)
             {

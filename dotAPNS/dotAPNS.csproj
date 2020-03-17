@@ -5,13 +5,9 @@
     <Authors>alexalok</Authors>
     <Description>dotAPNS is a library used to send push notifications to Apple devices using Apple Push Notification service.</Description>
     <Copyright>Copyright © alexalok 2019-2020</Copyright>
-    <Version>2.1.0</Version>
+    <Version>2.2.0</Version>
     <PackageReleaseNotes>
-      * Now allows setting a custom priority via `SetPriority()`. Overrides the default priority which is 5 for background push and 10 for everything else.
-
-      * Push type now must be explicitly provided and is required by ApplePush.ctor
-
-      * `CreateContentAvailable()` and `CreateAlert()` are now obsolete. Use `AddContentAvailable()` and `AddAlert()` as they provide better control over which push type to use and also allow constructing a push with both content-available and alert.
+      * Now allows setting `mutable-content : 1` via `AddMutableContent()`
     </PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/alexalok/dotAPNS</PackageProjectUrl>
     <RepositoryUrl>https://github.com/alexalok/dotAPNS</RepositoryUrl>

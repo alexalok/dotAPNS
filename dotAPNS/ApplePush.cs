@@ -33,6 +33,9 @@ namespace dotAPNS
         
         public bool IsMutableContent { get; private set; }
 
+        [CanBeNull]
+        public string ContainerIdentifier { get; private set; }
+
         /// <summary>
         /// User-defined properties that are sent in the payload.
         /// </summary>
@@ -97,6 +100,26 @@ namespace dotAPNS
         public ApplePush AddMutableContent()
         {
             IsMutableContent = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Add <i>container-identifier = "&lt;identifier&gt;"</i> to the payload.
+        /// Can only be used when <see cref="ApplePushType"/> is set to <b>FileProvider</b>.
+        /// See <a href="https://developer.apple.com/documentation/fileprovider/content_and_change_tracking/tracking_your_file_provider_s_changes/using_push_notifications_to_signal_changes">this</a> for documentation reference.
+        /// </summary>
+        /// <param name="identifier">Specifies the identifier of the container to update. This identifier should be the unique string used in the container's itemIdentifier property.
+        /// You can also use NSFileProviderRootContainerItemIdentifier to update the root container, or NSFileProviderWorkingSetContainerItemIdentifier to update the working set.</param>
+        /// <returns></returns>
+        public ApplePush AddContainerIdentifier(string identifier = "NSFileProviderRootContainerItemIdentifier")
+        {
+            if(Type != ApplePushType.FileProvider)
+                throw new InvalidOperationException("Container identifier can only be added to FileProvider type pushes.");
+
+            if(ContainerIdentifier != null)
+                throw new InvalidOperationException("Container identifier is already set.");
+
+            ContainerIdentifier = identifier;
             return this;
         }
 
@@ -199,6 +222,16 @@ namespace dotAPNS
         public object GeneratePayload()
         {
             dynamic payload = new ExpandoObject();
+            IDictionary<string, object> payloadAsDict = payload;
+
+            if (Type == ApplePushType.FileProvider)
+            {
+                if (ContainerIdentifier == null)
+                    throw new InvalidOperationException("For FileProvider pushes, AddContainerIdentifier() must be called before sending.");
+                payloadAsDict["container-identifier"] = ContainerIdentifier;
+                return payload;
+            }
+
             payload.aps = new ExpandoObject();
             IDictionary<string, object> apsAsDict = payload.aps;
             if (IsContentAvailable)
@@ -227,7 +260,6 @@ namespace dotAPNS
 
             if (CustomProperties != null)
             {
-                IDictionary<string, object> payloadAsDict = payload;
                 foreach (var customProperty in CustomProperties) 
                     payloadAsDict[customProperty.Key] = customProperty.Value;
             }

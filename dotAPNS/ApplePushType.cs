@@ -5,6 +5,7 @@
         Unknown,
         Alert,
         Background,
-        Voip
+        Voip,
+        FileProvider
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -127,7 +128,7 @@ namespace dotAPNS.Tests
         public void AddContentAvailable()
         {
             var push = new ApplePush(ApplePushType.Background);
-            
+
             push.AddContentAvailable();
 
             var payload = push.GeneratePayload();
@@ -148,6 +149,39 @@ namespace dotAPNS.Tests
             string payloadJson = JsonConvert.SerializeObject(payload);
             const string referenceJson = "{\"aps\":{\"content-available\":\"1\",\"mutable-content\":\"1\",\"alert\":{\"title\":\"title\",\"body\":\"body\"}}}";
             Assert.Equal(referenceJson, payloadJson);
+        }
+
+        [Fact]
+        public void Generating_Payload_With_FileProvider_Type_Without_ContainerIdentifier_Fails()
+        {
+            var push = new ApplePush(ApplePushType.FileProvider);
+            Assert.Throws<InvalidOperationException>(() => push.GeneratePayload());
+        }
+
+        [Fact]
+        public void Adding_ContainerIdentifier_To_All_Types_Except_FileProvider_Fails()
+        {
+            var types = ((ApplePushType[]) Enum.GetValues(typeof(ApplePushType)))
+                .Where(t => t != ApplePushType.FileProvider);
+
+            foreach (var type in types)
+            {
+                var push = new ApplePush(type);
+                Assert.Throws<InvalidOperationException>(() => push.AddContainerIdentifier());
+            }
+        }
+
+        [Fact]
+        public void Generated_Payload_With_FileProvider_Type_Containts_ContainerProvider_Field_Only()
+        {
+            const string expectedJson = "{\"container-identifier\":\"test-container-identifier\"}";
+            var push = new ApplePush(ApplePushType.FileProvider)
+                .AddContainerIdentifier("test-container-identifier");
+
+            var payload = push.GeneratePayload();
+            string json = JsonConvert.SerializeObject(payload);
+
+            Assert.Equal(expectedJson, json);
         }
     }
 }

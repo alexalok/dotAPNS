@@ -224,6 +224,8 @@ namespace dotAPNS
                     break;
                 case ApplePushType.Voip:
                     return _bundleId + ".voip";
+                case ApplePushType.FileProvider:
+                    return _bundleId + ".pushkit.fileprovider";
                 case ApplePushType.Unknown:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(pushType), pushType, null);

@@ -5,9 +5,9 @@
     <Authors>alexalok</Authors>
     <Description>dotAPNS is a library used to send push notifications to Apple devices using Apple Push Notification service.</Description>
     <Copyright>Copyright © alexalok 2019-2020</Copyright>
-    <Version>2.2.0</Version>
+    <Version>2.3.0</Version>
     <PackageReleaseNotes>
-      * Now allows setting `mutable-content : 1` via `AddMutableContent()`
+      * Now allows sending FileProvider pushes using AddContainerIdentifier(). See https://developer.apple.com/documentation/fileprovider/content_and_change_tracking/tracking_your_file_provider_s_changes/using_push_notifications_to_signal_changes for reference.
     </PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/alexalok/dotAPNS</PackageProjectUrl>
     <RepositoryUrl>https://github.com/alexalok/dotAPNS</RepositoryUrl>

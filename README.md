@@ -66,6 +66,8 @@ var options = new ApnsJwtOptions() { ... };
 var apns = ApnsClient.CreateUsingJwt(new HttpClient(), options);
 ```
 
+**Important:** when on .NET Framework, make sure that the `HttpClient` instance you pass to `CreateUsingJwt()` has a HTTP2 support. The default `HttpClient` **does not have it and will not work**. As a workaround it is suggested to install [System.Net.Http.WinHttpHandler](https://www.nuget.org/packages/System.Net.Http.WinHttpHandler/) .nuget package and instantiate the `HttpClient` with this custom handler as follows: `new HttpClient(new Http2CustomHandler())`.
+
 Note that the library *requires* you to supply `HttpClient` instance - this is done so that you can manage its lifecycle. Please see [this article](https://aspnetmonsters.com/2016/08/2016-08-27-httpclientwrong/) to learn more about why this is important. Also note that certificate-based connection method does not support `HttpClient` injection as of moment of writing.
 
 **🎉You're now all set to start sending pushes!🎉**

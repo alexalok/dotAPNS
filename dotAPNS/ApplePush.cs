@@ -40,9 +40,14 @@ namespace dotAPNS
         public bool IsMutableContent { get; private set; }
 
         /// <summary>
-        /// User-defined properties that are sent in the payload.
+        /// User-defined properties that will be attached to the root payload dictionary.
         /// </summary>
         public Dictionary<string, object> CustomProperties { get; set; }
+
+        /// <summary>
+        /// User-defined properties that will be attached to the <i>aps</i> payload dictionary.
+        /// </summary>
+        public IDictionary<string, object> CustomApsProperties { get; set; }
 
         /// <summary>
         /// Indicates whether alert must be sent as a string. 
@@ -192,11 +197,25 @@ namespace dotAPNS
             return this;
         }
 
-        public ApplePush AddCustomProperty(string key, object value)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="addToApsDict">If <b>true</b>, property will be added to the <i>aps</i> dictionary, otherwise to the root dictionary. Default: <b>false</b>.</param>
+        /// <returns></returns>
+        public ApplePush AddCustomProperty(string key, object value, bool addToApsDict = false)
         {
-            if(CustomProperties == null)
-                CustomProperties = new Dictionary<string, object>();
+            if (addToApsDict)
+            {
+                CustomApsProperties ??= new Dictionary<string, object>();
+                CustomApsProperties.Add(key, value);
+            }
+            else
+        {
+                CustomProperties ??= new Dictionary<string, object>();
             CustomProperties.Add(key, value);
+            }
             return this;
         }
 
@@ -249,6 +268,12 @@ namespace dotAPNS
                 IDictionary<string, object> payloadAsDict = payload;
                 foreach (var customProperty in CustomProperties) 
                     payloadAsDict[customProperty.Key] = customProperty.Value;
+            }
+
+            if (CustomApsProperties != null)
+            {
+                foreach (var customApsProperty in CustomApsProperties)
+                    apsAsDict[customApsProperty.Key] = customApsProperty.Value;
             }
 
             return payload;

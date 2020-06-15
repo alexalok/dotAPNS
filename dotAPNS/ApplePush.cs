@@ -26,9 +26,6 @@ namespace dotAPNS
         [CanBeNull]
         public string Sound { get; private set; }
 
-        [CanBeNull]
-        public string Location { get; private set; } // undocumented, but probably works
-
         /// <summary>
         /// See <a href="https://developer.apple.com/documentation/usernotifications/unnotificationcontent/1649866-categoryidentifier">official documentation</a> for reference.
         /// </summary>
@@ -153,18 +150,6 @@ namespace dotAPNS
             return this;
         }
 
-        [Obsolete("'Location' property is not offifically documented. It is not guaranteed to work.")]
-        public ApplePush AddLocation([NotNull] string location)
-        {
-            if (string.IsNullOrWhiteSpace(location))
-                throw new ArgumentException("Value cannot be null or whitespace.", nameof(location));
-            IsContentAvailableGuard();
-            if (Location != null)
-                throw new InvalidOperationException("Sound already exists");
-            Location = location;
-            return this;
-        }
-
         public ApplePush AddCategory([NotNull] string category)
         {
             if (string.IsNullOrWhiteSpace(category))
@@ -256,9 +241,6 @@ namespace dotAPNS
 
             if (Sound != null)
                 payload.aps.sound = Sound;
-
-            if (Location != null)
-                payload.aps.Location = Location;
 
             if (Category != null)
                 payload.aps.category = Category;

@@ -48,8 +48,7 @@ namespace dotAPNS.Tests
             var push = ApplePush.CreateAlert("body")
                 .AddToken("token")
                 .AddBadge(1)
-                .AddSound()
-                .AddLocation("location");
+                .AddSound();
             await client.Send(push);
         }
 

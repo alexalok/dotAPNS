@@ -178,7 +178,7 @@ namespace dotAPNS
         public ApplePush AddToken([NotNull] string token)
         {
             if (string.IsNullOrWhiteSpace(token))
-                throw new ArgumentException("Value cannot be null or empty.", nameof(token));
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(token));
             EnsureTokensNotExistGuard();
             if (Type == ApplePushType.Voip)
                 throw new InvalidOperationException($"Please use AddVoipToken() when sending {nameof(ApplePushType.Voip)} pushes.");
@@ -212,9 +212,9 @@ namespace dotAPNS
                 CustomApsProperties.Add(key, value);
             }
             else
-        {
+            {
                 CustomProperties ??= new Dictionary<string, object>();
-            CustomProperties.Add(key, value);
+                CustomProperties.Add(key, value);
             }
             return this;
         }

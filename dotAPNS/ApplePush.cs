@@ -29,6 +29,12 @@ namespace dotAPNS
         [CanBeNull]
         public string Location { get; private set; } // undocumented, but probably works
 
+        /// <summary>
+        /// See <a href="https://developer.apple.com/documentation/usernotifications/unnotificationcontent/1649866-categoryidentifier">official documentation</a> for reference.
+        /// </summary>
+        [CanBeNull]
+        public string Category { get; private set; }
+
         public bool IsContentAvailable { get; private set; }
         
         public bool IsMutableContent { get; private set; }
@@ -154,6 +160,16 @@ namespace dotAPNS
             return this;
         }
 
+        public ApplePush AddCategory([NotNull] string category)
+        {
+            if (string.IsNullOrWhiteSpace(category))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(category));
+            if (Category != null)
+                throw new InvalidOperationException($"{nameof(Category)} already exists.");
+            Category = category;
+            return this;
+        }
+
         public ApplePush AddToken([NotNull] string token)
         {
             if (string.IsNullOrWhiteSpace(token))
@@ -224,6 +240,9 @@ namespace dotAPNS
 
             if (Location != null)
                 payload.aps.Location = Location;
+
+            if (Category != null)
+                payload.aps.category = Category;
 
             if (CustomProperties != null)
             {

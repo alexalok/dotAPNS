@@ -15,6 +15,7 @@ namespace dotAPNS.Tests
         const string EnvFileName = "env.json";
         const string EnvNamePrefix = "dotapns_tests_";
 
+        public string P8CertPath { get; }
         public string P8CertData { get; }
         public X509Certificate2 P12Cert { get; }
 
@@ -27,6 +28,12 @@ namespace dotAPNS.Tests
                 var json = JObject.Parse(fileContents);
                 jsonProperties = json.Properties();
             }
+
+            string p8CertEnvName = $"{EnvNamePrefix}p8_path".ToLowerInvariant();
+            P8CertPath = Environment.GetEnvironmentVariable(p8CertEnvName)
+                ?? jsonProperties?.FirstOrDefault(p => string.Equals(p.Name, p8CertEnvName, StringComparison.InvariantCultureIgnoreCase))?.Value.Value<string>()
+                ?? throw new InvalidOperationException($"Please set {p8CertEnvName} environment variable before running tests or use env.json file. " +
+                    "See https://github.com/alexalok/dotAPNS/wiki/Unit-testing for reference.");
 
             string p8CertDataEnvName = $"{EnvNamePrefix}p8_contents".ToLowerInvariant();
             P8CertData = Environment.GetEnvironmentVariable(p8CertDataEnvName)

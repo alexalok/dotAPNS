@@ -52,6 +52,19 @@ namespace dotAPNS.Tests
             await client.Send(push);
         }
 
+        [Fact]
+        public void CreateUsingJwt_Using_Cert_Path_Succeeds()
+        {
+            var jwtOpt = new ApnsJwtOptions()
+            {
+                BundleId = "bundle",
+                CertFilePath = _certs.P8CertPath,
+                KeyId = "key",
+                TeamId = "team"
+            };
+            var client = ApnsClient.CreateUsingJwt(new HttpClient(), jwtOpt);
+        }
+
         IApnsClient BoostrapApnsClient()
         {
             var httpHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);

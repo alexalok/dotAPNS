@@ -142,13 +142,14 @@ namespace dotAPNS
             else if (options.CertContent != null)
             {
                 Debug.Assert(options.CertFilePath == null);
+                certContent = options.CertContent;
             }
             else
             {
                 throw new ArgumentException("Either certificate file path or certificate contents must be provided.", nameof(options));
             }
 
-            certContent = options.CertContent.Replace("\r", "").Replace("\n", "")
+            certContent = certContent.Replace("\r", "").Replace("\n", "")
                 .Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "");
 
 #if !NET46

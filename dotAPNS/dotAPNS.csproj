@@ -5,11 +5,9 @@
     <Authors>alexalok</Authors>
     <Description>dotAPNS is a library used to send push notifications to Apple devices using Apple Push Notification service.</Description>
     <Copyright>Copyright © alexalok 2019-2020</Copyright>
-    <Version>2.3.0</Version>
+    <Version>2.3.1</Version>
     <PackageReleaseNotes>
-      * Added an overload of `AddCustomProperty` that allows adding custom properties to the aps dictionary (https://github.com/alexalok/dotAPNS/commit/9d7031883cf33230125bf4bae85c173fb1c80946;
-      * Removed obsolete `AddLocation()` method, `AddCustomProperty("Location", "myValue", true)` may be used instead (https://github.com/alexalok/dotAPNS/commit/1b47f3a4ca89cb636a041d7f79d40c90850b45d9);
-      * Added an ability to specify push category via `AddCategory()` (https://github.com/alexalok/dotAPNS/commit/d77d8de9dbecc8a938a966e5b83eb2ecab5aec3a).
+      * Fixed NullReferenceException when calling `ApnsClient.CreateUsingJwt` using .p8 certificate file path (https://github.com/alexalok/dotAPNS/issues/25).
     </PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/alexalok/dotAPNS</PackageProjectUrl>
     <RepositoryUrl>https://github.com/alexalok/dotAPNS</RepositoryUrl>

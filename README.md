@@ -89,7 +89,7 @@ var push = ApplePush
 
 var response = await apns.Send(push);
 if(response?.IsSuccessful == true)
-    Console.WriteLine("Alert push was successfully sent!")
+    Console.WriteLine("Alert push was successfully sent!");
 else if(response?.IsSuccessful == false)
     Console.WriteLine("Cannot send push, error: " + response.ReasonString);
 else if(response?.IsSuccessful == null)

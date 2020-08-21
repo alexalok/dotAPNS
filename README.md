@@ -83,8 +83,8 @@ To send the most basic alert notifications you might use the following code:
 ```c#
 var options = new ApnsJwtOptions() { ... };
 var apns = ApnsClient.CreateUsingJwt(new HttpClient(), options); 
-var push = ApplePush
-    .CreateAlert(new ApplePushAlert("title", "body"))
+var push = new ApplePush(ApplePushType.Alert)
+    .AddAlert("title", "body")
     .AddToken("token");
 
 var response = await apns.Send(push);
@@ -164,8 +164,8 @@ Task<List<ApnsResponse>> SendPushes(IReadOnlyCollection<ApplePush> pushes, ApnsJ
 For example, the following code can be used to send a simple [background](https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/pushing_background_updates_to_your_app) push:
 
 ```c#
- var push = ApplePush
-     .CreateContentAvailable()
+ var push = new ApplePush(ApplePushType.Background)
+     .AddContentAvailable()
      .AddToken("token");
 var options = new ApnsJwtOptions() { ... };
 var response = await _apnsService.SendPush(push, options);

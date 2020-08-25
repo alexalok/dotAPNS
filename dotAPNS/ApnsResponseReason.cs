@@ -4,6 +4,7 @@
     {
         Success,
         Unknown,
-        DeviceTokenNotForTopic
+        DeviceTokenNotForTopic,
+        MissingProviderToken,
     }
 }

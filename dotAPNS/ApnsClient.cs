@@ -23,6 +23,8 @@ namespace dotAPNS
 {
     public interface IApnsClient
     {
+        [NotNull]
+        [ItemNotNull]
         Task<ApnsResponse> Send(ApplePush push);
     }
 

@@ -87,13 +87,36 @@ var push = new ApplePush(ApplePushType.Alert)
     .AddAlert("title", "body")
     .AddToken("token");
 
-var response = await apns.Send(push);
-if(response?.IsSuccessful == true)
-    Console.WriteLine("Alert push was successfully sent!");
-else if(response?.IsSuccessful == false)
-    Console.WriteLine("Cannot send push, error: " + response.ReasonString);
-else if(response?.IsSuccessful == null)
-    Console.WriteLine("Cannot send push because APNs service is unreachable.");
+try
+{
+    var response = await apns.Send(push);
+    if (response.IsSuccessful)
+    {
+        Console.WriteLine("An alert push has been successfully sent!");
+    }
+    else
+    {
+        switch (response.Reason)
+        {
+            case ApnsResponseReason.BadCertificateEnvironment:
+                // The client certificate is for the wrong environment.
+                // TODO: retry on another environment
+                break;
+                // TODO: process other reasons we might be interested in
+            default:
+                throw new ArgumentOutOfRangeException(nameof(response.Reason), response.Reason, null);
+        }
+        Console.WriteLine("Failed to send a push, APNs reported an error: " + response.ReasonString);
+    }
+}
+catch (TaskCanceledException)
+{
+    Console.WriteLine("Failed to send a push: HTTP request timed out.");
+}
+catch (HttpRequestException ex)
+{
+    Console.WriteLine("Failed to send a push. HTTP request failed: " + ex);
+}
 ```
 
 Check out more examples [here](https://github.com/alexalok/dotAPNS/tree/master/dotAPNS.Tests).

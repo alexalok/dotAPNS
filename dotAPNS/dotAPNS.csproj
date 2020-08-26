@@ -5,9 +5,11 @@
     <Authors>alexalok</Authors>
     <Description>dotAPNS is a library used to send push notifications to Apple devices using Apple Push Notification service.</Description>
     <Copyright>Copyright © alexalok 2019-2020</Copyright>
-    <Version>2.3.1</Version>
+    <Version>2.4.4</Version>
     <PackageReleaseNotes>
-      * Fixed NullReferenceException when calling `ApnsClient.CreateUsingJwt` using .p8 certificate file path (https://github.com/alexalok/dotAPNS/issues/25).
+      * Indicate that ApnsClient.Send method never returns null via annotations.
+      * Improve handling of errors that APNs responds with.
+      * BREAKING CHANGE: added new and reordered existing members of ApnsResponseReason enum.
     </PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/alexalok/dotAPNS</PackageProjectUrl>
     <RepositoryUrl>https://github.com/alexalok/dotAPNS</RepositoryUrl>

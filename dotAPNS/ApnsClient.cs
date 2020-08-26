@@ -120,19 +120,23 @@ namespace dotAPNS
             req.Content = new JsonContent(payload);
 
             var resp = await _http.SendAsync(req);
-            string respContent = await resp.Content.ReadAsStringAsync();
+            var respContent = await resp.Content.ReadAsStringAsync();
 
-            if (resp.StatusCode == HttpStatusCode.BadRequest)
+            if (resp.IsSuccessStatusCode)
+            {
+                return ApnsResponse.Successful();
+            }
+
+            if ((resp.StatusCode >= (HttpStatusCode)400) && (resp.StatusCode <= (HttpStatusCode)499))
             {
                 //{"reason":"DeviceTokenNotForTopic"}
-
                 dynamic obj = JObject.Parse(respContent);
                 if (!Enum.TryParse((string)obj.reason, out ApnsResponseReason errReason))
                     errReason = ApnsResponseReason.Unknown;
                 return ApnsResponse.Error(errReason, (string)obj.reason);
             }
 
-            return ApnsResponse.Successful();
+            return ApnsResponse.Error(ApnsResponseReason.Unknown, "Status: " + resp.StatusCode + ", Msg: " + respContent);
         }
 
         public static ApnsClient CreateUsingJwt([NotNull] HttpClient http, [NotNull]ApnsJwtOptions options)

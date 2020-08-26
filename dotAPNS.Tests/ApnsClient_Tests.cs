@@ -1,11 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using ExpectedObjects;
 using Moq;
 using Moq.Protected;
+using Newtonsoft.Json.Bson;
 using Xunit;
 
 namespace dotAPNS.Tests
@@ -45,10 +48,7 @@ namespace dotAPNS.Tests
         public async Task Sending_Push_Not_Throws()
         {
             var client = BoostrapApnsClient();
-            var push = ApplePush.CreateAlert("body")
-                .AddToken("token")
-                .AddBadge(1)
-                .AddSound();
+            var push = CreateStubPush();
             await client.Send(push);
         }
 
@@ -65,19 +65,59 @@ namespace dotAPNS.Tests
             var client = ApnsClient.CreateUsingJwt(new HttpClient(), jwtOpt);
         }
 
-        IApnsClient BoostrapApnsClient()
+        [Theory]
+        [MemberData(nameof(Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data))]
+        public async Task Ensure_Error_When_Sending_Push_Is_Correctly_Handled(int statusCode, string payload, ApnsResponse expectedResponse)
+        {
+            var apns = BoostrapApnsClient(statusCode, payload);
+            var push = CreateStubPush();
+            var resp = await apns.Send(push);
+
+            expectedResponse.ToExpectedObject().ShouldEqual(resp);
+        }
+
+        public static IEnumerable<object[]> Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data => new[]
+        {
+            new object[]
+            {
+                400,
+                "{\"reason\":\"DeviceTokenNotForTopic\"}",
+                ApnsResponse.Error(ApnsResponseReason.DeviceTokenNotForTopic, "DeviceTokenNotForTopic")
+            },
+            new object[]
+            {
+                410,
+                "{\"reason\":\"Unregistered\",\"timestamp\":1454948015990}",
+                ApnsResponse.Error(ApnsResponseReason.Unregistered, "Unregistered")
+            }
+        };
+
+        IApnsClient BoostrapApnsClient(int statusCode = 200, string responseContent = "{}")
         {
             var httpHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
             httpHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(new HttpResponseMessage()
                 {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new JsonContent("{}")
+                    StatusCode = (HttpStatusCode) statusCode,
+                    Content = new JsonContent(responseContent)
                 });
-
-            var client = ApnsClient.CreateUsingJwt(new HttpClient(httpHandler.Object), new ApnsJwtOptions() { BundleId = "bundle", CertContent = _certs.P8CertData, KeyId = "key", TeamId = "team" });
+            var jwt = CreateStubJwt();
+            var client = ApnsClient.CreateUsingJwt(new HttpClient(httpHandler.Object), jwt);
             return client;
+        }
+
+        ApplePush CreateStubPush()
+        {
+            var push = new ApplePush(ApplePushType.Alert)
+                .AddToken("token");
+            return push;
+        }
+
+        ApnsJwtOptions CreateStubJwt()
+        {
+            var jwt = new ApnsJwtOptions() { BundleId = "bundle", CertContent = _certs.P8CertData, KeyId = "key", TeamId = "team" };
+            return jwt;
         }
     }
 }

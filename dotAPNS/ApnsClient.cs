@@ -124,24 +124,35 @@ namespace dotAPNS
             var resp = await _http.SendAsync(req);
             var respContent = await resp.Content.ReadAsStringAsync();
 
-            if (resp.IsSuccessStatusCode)
-            {
+            // Process status codes specified by APNs documentation
+            // https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/handling_notification_responses_from_apns
+            var statusCode = (int)resp.StatusCode;
+
+            // Push has been successfully sent. This is the only code indicating a success as per documentation.
+            if (statusCode == 200)
                 return ApnsResponse.Successful();
-            }
 
-            if ((resp.StatusCode >= (HttpStatusCode)400) && (resp.StatusCode <= (HttpStatusCode)499))
+            // something went wrong
+            // check for payload 
+            // {"reason":"DeviceTokenNotForTopic"}
+            // {"reason":"Unregistered","timestamp":1454948015990}
+
+            ApnsErrorResponsePayload errorPayload;
+            try
             {
-                //{"reason":"DeviceTokenNotForTopic"}
-                dynamic obj = JObject.Parse(respContent);
-                if (!Enum.TryParse((string)obj.reason, out ApnsResponseReason errReason))
-                    errReason = ApnsResponseReason.Unknown;
-                return ApnsResponse.Error(errReason, (string)obj.reason);
+                errorPayload = JsonConvert.DeserializeObject<ApnsErrorResponsePayload>(respContent);
+            }
+            catch (JsonException ex)
+            {
+                return ApnsResponse.Error(ApnsResponseReason.Unknown, 
+                    $"Status: {statusCode}, reason: {respContent ?? "not specified"}.");
             }
 
-            return ApnsResponse.Error(ApnsResponseReason.Unknown, "Status: " + resp.StatusCode + ", Msg: " + respContent);
+            Debug.Assert(errorPayload != null);
+            return ApnsResponse.Error(errorPayload.Reason, errorPayload.ReasonRaw);
         }
 
-        public static ApnsClient CreateUsingJwt([NotNull] HttpClient http, [NotNull]ApnsJwtOptions options)
+        public static ApnsClient CreateUsingJwt([NotNull] HttpClient http, [NotNull] ApnsJwtOptions options)
         {
             if (http == null) throw new ArgumentNullException(nameof(http));
             if (options == null) throw new ArgumentNullException(nameof(options));

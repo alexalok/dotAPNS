@@ -17,9 +17,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Http" Version="3.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\dotAPNS\dotAPNS.csproj" />
   </ItemGroup>
 

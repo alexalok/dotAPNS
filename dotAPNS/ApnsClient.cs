@@ -118,6 +118,14 @@ namespace dotAPNS
             req.Headers.Add("apns-topic", GetTopic(push.Type));
             if (!_useCert)
                 req.Headers.Authorization = new AuthenticationHeaderValue("bearer", GetOrGenerateJwt());
+            if (push.Expiration.HasValue)
+            {
+                var exp = push.Expiration.Value;
+                if (exp == DateTimeOffset.MinValue)
+                    req.Headers.Add("apns-expiration", "0");
+                else
+                    req.Headers.Add("apns-expiration", exp.ToUnixTimeSeconds().ToString());
+            }
 
             req.Content = new JsonContent(payload);
 

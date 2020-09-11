@@ -137,6 +137,27 @@ namespace dotAPNS.Tests
         }
 
         [Fact]
+        public void AddExpiration()
+        {
+            var now = DateTimeOffset.UtcNow;
+            var push = new ApplePush(ApplePushType.Alert);
+
+            push.AddExpiration(now);
+
+            Assert.Equal(now, push.Expiration);
+        }
+
+        [Fact]
+        public void AddImmediateExpiration()
+        {
+            var push = new ApplePush(ApplePushType.Alert);
+
+            push.AddImmediateExpiration();
+
+            Assert.Equal(DateTimeOffset.MinValue, push.Expiration);
+        }
+
+        [Fact]
         public void Creating_Push_With_ContentAvailable_MutableContent_Alert()
         {
             var push = new ApplePush(ApplePushType.Alert)

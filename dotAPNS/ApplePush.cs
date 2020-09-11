@@ -37,6 +37,12 @@ namespace dotAPNS
         public bool IsMutableContent { get; private set; }
 
         /// <summary>
+        /// The date at which the notification is no longer valid.
+        /// If set to <i>null</i> (default) then <i>apns-expiration</i> header is not sent and expiration time is undefined (<seealso href="https://stackoverflow.com/questions/44630196/what-is-the-default-value-of-the-apns-expiration-field">but is probably large</seealso>).
+        /// </summary>
+        public DateTimeOffset? Expiration { get; private set; }
+
+        /// <summary>
         /// User-defined properties that will be attached to the root payload dictionary.
         /// </summary>
         public Dictionary<string, object> CustomProperties { get; set; }
@@ -157,6 +163,27 @@ namespace dotAPNS
             if (Category != null)
                 throw new InvalidOperationException($"{nameof(Category)} already exists.");
             Category = category;
+            return this;
+        }
+
+        /// <summary>
+        ///  APNs stores the notification and tries to deliver it at least once, repeating the attempt as needed until the specified date.
+        /// </summary>
+        /// <param name="expirationDate">The date at which the notification is no longer valid.</param>
+        /// 
+        public ApplePush AddExpiration(DateTimeOffset expirationDate)
+        {
+            Expiration = expirationDate;
+            return this;
+        }
+
+        /// <summary>
+        /// APNs attempts to deliver the notification only once and doesn’t store it.
+        /// </summary>
+        /// <seealso cref="AddExpiration"/>
+        public ApplePush AddImmediateExpiration()
+        {
+            Expiration = DateTimeOffset.MinValue;
             return this;
         }
 

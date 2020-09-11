@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
@@ -47,7 +49,7 @@ namespace dotAPNS.Tests
         [Fact]
         public async Task Sending_Push_Not_Throws()
         {
-            var client = BoostrapApnsClient();
+            var (client, _) = BoostrapApnsClient();
             var push = CreateStubPush();
             await client.Send(push);
         }
@@ -69,11 +71,51 @@ namespace dotAPNS.Tests
         [MemberData(nameof(Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data))]
         public async Task Ensure_Error_When_Sending_Push_Is_Correctly_Handled(int statusCode, string payload, ApnsResponse expectedResponse)
         {
-            var apns = BoostrapApnsClient(statusCode, payload);
+            var (apns, _) = BoostrapApnsClient(statusCode, payload);
             var push = CreateStubPush();
             var resp = await apns.Send(push);
 
             expectedResponse.ToExpectedObject().ShouldEqual(resp);
+        }
+
+        [Fact]
+        public void Ensure_Push_Expiration_Setting_Is_Respected()
+        {
+            var now = DateTimeOffset.UtcNow;
+            long unixNow = now.ToUnixTimeSeconds();
+            var (apns, httpHandlerMock) = BoostrapApnsClient();
+            var push = CreateStubPush();
+            push.AddExpiration(now);
+
+            apns.Send(push);
+
+            httpHandlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Once(),
+                    ItExpr.Is<HttpRequestMessage>(m => m.Headers.Single(h => h.Key == "apns-expiration").Value.Single() == unixNow.ToString()),
+                    ItExpr.IsAny<CancellationToken>()
+                );
+        }
+
+        [Fact]
+        public void Ensure_Push_Immediate_Expiration_Setting_Is_Respected()
+        {
+            var (apns, httpHandlerMock) = BoostrapApnsClient();
+            var push = CreateStubPush();
+            push.AddImmediateExpiration();
+
+            apns.Send(push);
+
+            httpHandlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Once(),
+                    ItExpr.Is<HttpRequestMessage>(m => m.Headers.Single(h => h.Key == "apns-expiration").Value.Single() == "0"),
+                    ItExpr.IsAny<CancellationToken>()
+                );
         }
 
         public static IEnumerable<object[]> Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data => new[]
@@ -92,11 +134,15 @@ namespace dotAPNS.Tests
             }
         };
 
-        IApnsClient BoostrapApnsClient(int statusCode = 200, string responseContent = "{}")
+        (IApnsClient apns, Mock<HttpMessageHandler> httpHandlerMock) BoostrapApnsClient(int statusCode = 200, string responseContent = "{}")
         {
             var httpHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
             httpHandler.Protected()
-                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>()
+                )
                 .ReturnsAsync(new HttpResponseMessage()
                 {
                     StatusCode = (HttpStatusCode) statusCode,
@@ -104,7 +150,7 @@ namespace dotAPNS.Tests
                 });
             var jwt = CreateStubJwt();
             var client = ApnsClient.CreateUsingJwt(new HttpClient(httpHandler.Object), jwt);
-            return client;
+            return (client, httpHandler);
         }
 
         ApplePush CreateStubPush()

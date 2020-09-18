@@ -191,6 +191,11 @@ namespace dotAPNS
             return this;
         }
 
+        /// <summary>
+        /// Add deviceToken, throws error if token was set
+        /// </summary>
+        /// <param name="token">APNS device token</param>
+        /// <returns></returns>
         public ApplePush AddToken([NotNull] string token)
         {
             if (string.IsNullOrWhiteSpace(token))
@@ -198,6 +203,21 @@ namespace dotAPNS
             EnsureTokensNotExistGuard();
             if (Type == ApplePushType.Voip)
                 throw new InvalidOperationException($"Please use AddVoipToken() when sending {nameof(ApplePushType.Voip)} pushes.");
+            Token = token;
+            return this;
+        }
+
+        /// <summary>
+        /// Set a (new) deviceToken
+        /// </summary>
+        /// <param name="token">APNS device token</param>
+        /// <returns></returns>
+        public ApplePush SetToken([NotNull] string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(token));
+            if (Type == ApplePushType.Voip)
+                throw new InvalidOperationException($"Please use SetVoipToken() when sending {nameof(ApplePushType.Voip)} pushes.");
             Token = token;
             return this;
         }
@@ -331,10 +351,10 @@ namespace dotAPNS
         public ApplePushAlert([CanBeNull] string titleLocKey, [CanBeNull] string[] titleLocArgs, [CanBeNull] string actionLocKey, [NotNull] string locKey, [CanBeNull] params string[]? locArgs)
         {
             Localized = true;
-            Title = titleLocKey;
+            LocTitle = titleLocKey;
             TitleArgs = titleLocArgs;
             ActionLocKey = actionLocKey;
-            Body = locKey ?? throw new ArgumentNullException(nameof(locKey));
+            LocBody = locKey ?? throw new ArgumentNullException(nameof(locKey));
             BodyArgs = (locArgs.Length == 0) ? null: locArgs;
         }
 

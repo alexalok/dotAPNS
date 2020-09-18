@@ -8,9 +8,8 @@ namespace dotAPNS
     {
         const string JsonMediaType = "application/json";
 
-        public JsonContent(object obj) : this(obj is string str ? str : JsonConvert.SerializeObject(obj))
+        public JsonContent(object obj) : this(obj is string str ? str : JsonConvert.SerializeObject(obj, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }))
         {
-
         }
 
         JsonContent(string content) : base(content, Encoding.UTF8, JsonMediaType)

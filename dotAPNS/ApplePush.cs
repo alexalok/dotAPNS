@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using JetBrains.Annotations;
+using Newtonsoft.Json;
 
 namespace dotAPNS
 {
@@ -114,11 +115,41 @@ namespace dotAPNS
         /// <param name="title">Alert title. Can be null.</param>
         /// <param name="body">Alert body. <b>Cannot be null.</b></param>
         /// <returns></returns>
-        public ApplePush AddAlert(string title = null, string body = null)
+        public ApplePush AddAlert([CanBeNull] string title, [NotNull] string body)
         {
             Alert = new ApplePushAlert(title, body);
             if (title == null)
                 _sendAlertAsText = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Add alert to the payload.
+        /// </summary>
+        /// <param name="body">Alert body. <b>Cannot be null.</b></param>
+        /// <returns></returns>
+        public ApplePush AddAlert([NotNull] string body)
+        {
+            return AddAlert(null, body);
+        }
+
+        /// <summary>
+        /// Add localized alert to the payload.
+        /// </summary>
+        /// <param name="titleLocKey"> The key to a title string in the Localizable.strings file for the current localization.
+        ///                            The key string can be formatted with %@ and %n$@ specifiers to take the variables specified
+        ///                            in the titleLocArgs array.  <b>Cannot be null.</b></param>
+        /// <param name="titleLocArgs"> Variable string values to appear in place of the format specifiers in titleLocKey <b>Can be null.</b></param>
+        /// <param name="actionLocKey"> If a string is specified, the system displays an alert that includes the Close and View buttons. <b>Can be null.</b></param>
+        /// <param name="locBody"> A key to an alert-message string in a Localizable.strings file for the current localization 
+        ///                        (which is set by the user’s language preference). The key string can be formatted with %@ and %n$@ 
+        ///                        specifiers to take the variables specified in the locArgs array. <b>Cannot be null.</b></param>
+        /// <param name="locArgs">Optional argument list to localized body. <b></b></param>
+        /// <returns></returns>
+
+        public ApplePush AddAlert([CanBeNull] string titleLocKey, [CanBeNull] string[] titleLocArgs, [CanBeNull] string actionLocKey, [NotNull] string locBody, [CanBeNull] params string[]? locArgs)
+        {
+            Alert = new ApplePushAlert(titleLocKey, titleLocArgs, actionLocKey, locBody, locArgs);
             return this;
         }
 
@@ -231,6 +262,8 @@ namespace dotAPNS
                 object alert;
                 if (_sendAlertAsText)
                     alert = Alert.Body;
+                else if (Alert.Localized)
+                    alert = Alert;
                 else
                     alert = new { title = Alert.Title, body = Alert.Body };
                 payload.aps.alert = alert;
@@ -262,17 +295,50 @@ namespace dotAPNS
         }
     }
 
+    [JsonObject(MemberSerialization.OptIn)]
     public class ApplePushAlert
     {
+        [JsonProperty("title")] 
         public string Title { get; }
 
+        [JsonProperty("body")] 
         public string Body { get; }
+
+        [JsonProperty("title-loc-key")]
+        public string LocTitle { get; }
+
+        [JsonProperty("title-loc-args")]
+        public string[] TitleArgs { get; }
+
+        [JsonProperty("action-loc-key")]
+        public string ActionLocKey { get; }
+
+        [JsonProperty("loc-key")]
+        public string LocBody { get; }
+        
+        [JsonProperty("loc-args")]
+        public string[] BodyArgs { get; }
+        
+        public bool Localized { get; }
 
         public ApplePushAlert([CanBeNull] string title, [NotNull] string body)
         {
+            Localized = false;
             Title = title;
             Body = body ?? throw new ArgumentNullException(nameof(body));
         }
+
+        public ApplePushAlert([CanBeNull] string titleLocKey, [CanBeNull] string[] titleLocArgs, [CanBeNull] string actionLocKey, [NotNull] string locKey, [CanBeNull] params string[]? locArgs)
+        {
+            Localized = true;
+            Title = titleLocKey;
+            TitleArgs = titleLocArgs;
+            ActionLocKey = actionLocKey;
+            Body = locKey ?? throw new ArgumentNullException(nameof(locKey));
+            BodyArgs = (locArgs.Length == 0) ? null: locArgs;
+        }
+
+
     }
 
 }

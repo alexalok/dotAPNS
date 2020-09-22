@@ -119,6 +119,21 @@ catch (HttpRequestException ex)
 }
 ```
 
+## Custom payload fields
+
+To add your own fields to the push payload you may use the `ApplePush.AddCustomProperty` method, for example:
+### To add the field to the root of the payload
+```c#
+var push = new ApplePush(ApplePushType.Alert)
+.AddCustomProperty("thread-id", "123");
+```
+###  Or to the `aps` section
+```c#
+var push = new ApplePush(ApplePushType.Alert)
+.AddCustomProperty("thread-id", "123", true);
+```
+An example can also be found [here](https://github.com/alexalok/dotAPNS/blob/72f23e74f81717968b7dfcc997660b105d8c3d63/dotAPNS.Tests/ApplePush_Tests.cs#L90).
+
 Check out more examples [here](https://github.com/alexalok/dotAPNS/tree/master/dotAPNS.Tests).
 
 

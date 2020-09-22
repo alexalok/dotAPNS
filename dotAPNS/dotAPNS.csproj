@@ -5,10 +5,9 @@
     <Authors>alexalok</Authors>
     <Description>dotAPNS is a library used to send push notifications to Apple devices using Apple Push Notification service.</Description>
     <Copyright>Copyright © alexalok 2019-2020</Copyright>
-    <Version>2.5.1</Version>
+    <Version>2.6.0</Version>
     <PackageReleaseNotes>
-      * Introduced apns-expiration header support
-      * Fixed package reference warnings
+      * Added an `AddAlert` overload
     </PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/alexalok/dotAPNS</PackageProjectUrl>
     <RepositoryUrl>https://github.com/alexalok/dotAPNS</RepositoryUrl>

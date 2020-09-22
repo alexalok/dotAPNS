@@ -120,12 +120,22 @@ namespace dotAPNS
         /// <param name="title">Alert title. Can be null.</param>
         /// <param name="body">Alert body. <b>Cannot be null.</b></param>
         /// <returns></returns>
-        public ApplePush AddAlert(string title = null, string body = null)
+        public ApplePush AddAlert([CanBeNull] string title, [NotNull] string body)
         {
             Alert = new ApplePushAlert(title, body);
             if (title == null)
                 _sendAlertAsText = true;
             return this;
+        }
+
+        /// <summary>
+        /// Add alert to the payload.
+        /// </summary>
+        /// <param name="body">Alert body. <b>Cannot be null.</b></param>
+        /// <returns></returns>
+        public ApplePush AddAlert([NotNull] string body)
+        {
+            return AddAlert(null, body);
         }
 
         public ApplePush SetPriority(int priority)

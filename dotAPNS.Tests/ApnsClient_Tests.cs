@@ -37,6 +37,7 @@ namespace dotAPNS.Tests
             Assert.ThrowsAsync<InvalidOperationException>(async () => await apns.Send(push));
         }
 
+        [Fact]
         public void Creating_Client_With_Cert_Not_Fails_Only_On_NetCore3_0()
         {
 #if !NETCOREAPP3_0

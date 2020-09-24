@@ -119,6 +119,15 @@ catch (HttpRequestException ex)
 }
 ```
 
+## Background (aka "silent") push
+```c#
+var push = new ApplePush(ApplePushType.Background)
+    .AddContentAvailable()
+    .AddToken("replaceme");
+```
+
+Note that background pushes are subject to [certain limitations](https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/pushing_background_updates_to_your_app). There is no way to circumvent this.
+
 ## Custom payload fields
 
 To add your own fields to the push payload you may use the `ApplePush.AddCustomProperty` method, for example:

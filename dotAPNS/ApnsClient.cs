@@ -44,6 +44,7 @@ namespace dotAPNS
 
         string _jwt;
         DateTime _lastJwtGenerationTime;
+        readonly object _jwtRefreshLock = new object();
 
         readonly HttpClient _http;
         readonly bool _useCert;
@@ -265,30 +266,38 @@ namespace dotAPNS
 
         string GetOrGenerateJwt()
         {
-            if (_lastJwtGenerationTime > DateTime.UtcNow - TimeSpan.FromMinutes(20)) // refresh no more than once every 20 minutes
-                return _jwt;
-            var now = DateTimeOffset.UtcNow;
-
-            string header = JsonConvert.SerializeObject((new { alg = "ES256", kid = _keyId }));
-            string payload = JsonConvert.SerializeObject(new { iss = _teamId, iat = now.ToUnixTimeSeconds() });
-
-            string headerBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(header));
-            string payloadBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
-            string unsignedJwtData = $"{headerBase64}.{payloadBase64}";
-
-            byte[] signature;
-#if NET46
-            using (var dsa = new ECDsaCng(_key))
+            lock (_jwtRefreshLock)
             {
-                dsa.HashAlgorithm = CngAlgorithm.Sha256;
-                signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData));
+                return GetOrGenerateJwtInternal();
             }
+
+            string GetOrGenerateJwtInternal()
+            {
+                if (_lastJwtGenerationTime > DateTime.UtcNow - TimeSpan.FromMinutes(20)) // refresh no more than once every 20 minutes
+                    return _jwt;
+                var now = DateTimeOffset.UtcNow;
+
+                string header = JsonConvert.SerializeObject((new { alg = "ES256", kid = _keyId }));
+                string payload = JsonConvert.SerializeObject(new { iss = _teamId, iat = now.ToUnixTimeSeconds() });
+
+                string headerBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(header));
+                string payloadBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));
+                string unsignedJwtData = $"{headerBase64}.{payloadBase64}";
+
+                byte[] signature;
+#if NET46
+                using (var dsa = new ECDsaCng(_key))
+                {
+                    dsa.HashAlgorithm = CngAlgorithm.Sha256;
+                    signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData));
+                }
 #else
-            signature = _key.SignData(Encoding.UTF8.GetBytes(unsignedJwtData), HashAlgorithmName.SHA256);
+                signature = _key.SignData(Encoding.UTF8.GetBytes(unsignedJwtData), HashAlgorithmName.SHA256);
 #endif
-            _jwt = $"{unsignedJwtData}.{Convert.ToBase64String(signature)}";
-            _lastJwtGenerationTime = now.UtcDateTime;
-            return _jwt;
+                _jwt = $"{unsignedJwtData}.{Convert.ToBase64String(signature)}";
+                _lastJwtGenerationTime = now.UtcDateTime;
+                return _jwt;
+            }
         }
     }
 }

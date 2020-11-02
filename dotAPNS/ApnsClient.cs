@@ -141,8 +141,8 @@ namespace dotAPNS
 
             req.Content = new JsonContent(payload);
 
-            var resp = await _http.SendAsync(req);
-            var respContent = await resp.Content.ReadAsStringAsync();
+            var resp = await _http.SendAsync(req).ConfigureAwait(false);
+            var respContent = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             // Process status codes specified by APNs documentation
             // https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/handling_notification_responses_from_apns

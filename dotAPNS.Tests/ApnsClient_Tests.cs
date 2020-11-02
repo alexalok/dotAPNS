@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
@@ -11,6 +12,7 @@ using ExpectedObjects;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json.Bson;
+using Nito.AsyncEx;
 using Xunit;
 
 namespace dotAPNS.Tests
@@ -119,6 +121,27 @@ namespace dotAPNS.Tests
                 );
         }
 
+        [SuppressMessage("ReSharper", "AsyncConverter.AsyncWait")]
+        [Fact]
+        public async Task Ensure_Send_Does_Not_Deadlock_When_Sync_Waiting_On_Result_With_Sync_Context()
+        {
+            var (apns, httpHandlerMock) = BoostrapApnsClient();
+            var push = CreateStubPush();
+
+            // This always runs on a theadpool thread and sets single-threaded ctx only for that thread.
+            // Thereby, we're guaranteed to not be locked when Task.Delay-ing below if ctx is set before
+            // Task.Delay has a chance to capture the current ctx.
+            var t = Task.Run(() =>
+            {
+                var singleThreadedSyncCtx = new AsyncContext().SynchronizationContext;
+                SynchronizationContext.SetSynchronizationContext(singleThreadedSyncCtx);
+                _ = apns.SendAsync(push).Result;
+            });
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            if (!t.IsCompleted)
+                throw new Exception("Code has deadlocked.");
+        }
+
         public static IEnumerable<object[]> Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data => new[]
         {
             new object[]
@@ -144,10 +167,14 @@ namespace dotAPNS.Tests
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>()
                 )
-                .ReturnsAsync(new HttpResponseMessage()
+                .Returns<HttpRequestMessage, CancellationToken>(async (r, c) =>
                 {
-                    StatusCode = (HttpStatusCode) statusCode,
-                    Content = new JsonContent(responseContent)
+                    await Task.Delay(TimeSpan.FromMilliseconds(1), c).ConfigureAwait(false); // technically library-side code, thus ignoring sync ctx
+                    return new HttpResponseMessage()
+                    {
+                        StatusCode = (HttpStatusCode) statusCode,
+                        Content = new JsonContent(responseContent)
+                    };
                 });
             var jwt = CreateStubJwt();
             var client = ApnsClient.CreateUsingJwt(new HttpClient(httpHandler.Object), jwt);

@@ -34,7 +34,7 @@ namespace dotAPNS.Tests
             var apns = ApnsClient.CreateUsingCert(_certs.P12Cert);
             var push = ApplePush.CreateAlert(new ApplePushAlert("title", "body")).AddToken("token");
 
-            Assert.ThrowsAsync<InvalidOperationException>(async () => await apns.Send(push));
+            Assert.ThrowsAsync<InvalidOperationException>(async () => await apns.SendAsync(push));
         }
 
         [Fact]
@@ -52,7 +52,7 @@ namespace dotAPNS.Tests
         {
             var (client, _) = BoostrapApnsClient();
             var push = CreateStubPush();
-            await client.Send(push);
+            await client.SendAsync(push);
         }
 
         [Fact]
@@ -74,7 +74,7 @@ namespace dotAPNS.Tests
         {
             var (apns, _) = BoostrapApnsClient(statusCode, payload);
             var push = CreateStubPush();
-            var resp = await apns.Send(push);
+            var resp = await apns.SendAsync(push);
 
             expectedResponse.ToExpectedObject().ShouldEqual(resp);
         }
@@ -88,7 +88,7 @@ namespace dotAPNS.Tests
             var push = CreateStubPush();
             push.AddExpiration(now);
 
-            apns.Send(push);
+            apns.SendAsync(push);
 
             httpHandlerMock
                 .Protected()
@@ -107,7 +107,7 @@ namespace dotAPNS.Tests
             var push = CreateStubPush();
             push.AddImmediateExpiration();
 
-            apns.Send(push);
+            apns.SendAsync(push);
 
             httpHandlerMock
                 .Protected()

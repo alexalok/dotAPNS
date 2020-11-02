@@ -25,7 +25,12 @@ namespace dotAPNS
     {
         [NotNull]
         [ItemNotNull]
+        [Obsolete("Please use " + nameof(SendAsync) + " instead")]
         Task<ApnsResponse> Send(ApplePush push);
+
+        [NotNull]
+        [ItemNotNull]
+        Task<ApnsResponse> SendAsync(ApplePush push);
     }
 
     public class ApnsClient : IApnsClient
@@ -102,7 +107,13 @@ namespace dotAPNS
                 $"Make sure {nameof(ApnsJwtOptions)}.{nameof(ApnsJwtOptions.BundleId)} is set to a non-null value.");
         }
 
-        public async Task<ApnsResponse> Send(ApplePush push)
+        [Obsolete("Please use " + nameof(SendAsync) + " instead.")]
+        public Task<ApnsResponse> Send(ApplePush push)
+        {
+            return SendAsync(push);
+        }
+
+        public async Task<ApnsResponse> SendAsync(ApplePush push)
         {
             if (_useCert)
             {

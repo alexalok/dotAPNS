@@ -121,7 +121,6 @@ namespace dotAPNS.Tests
                 );
         }
 
-        [SuppressMessage("ReSharper", "AsyncConverter.AsyncWait")]
         [Fact]
         public async Task Ensure_Send_Does_Not_Deadlock_When_Sync_Waiting_On_Result_With_Sync_Context()
         {
@@ -142,6 +141,31 @@ namespace dotAPNS.Tests
                 throw new Exception("Code has deadlocked.");
         }
 
+        [Theory]
+        [InlineData(true, true, "https://api.development.push.apple.com:2197/3/device/token")]
+        [InlineData(true, false, "https://api.push.apple.com:2197/3/device/token")]
+        [InlineData(false, true, "https://api.development.push.apple.com:443/3/device/token")]
+        [InlineData(false, false, "https://api.push.apple.com:443/3/device/token")]
+        public async Task SendAsync_Uses_Correct_Port(bool useBackupPort, bool useSandbox, string expectedUrl)
+        {
+            var (apns, httpHandlerMock) = BoostrapApnsClient();
+            var push = CreateStubPush();
+            if (useBackupPort)
+                apns.UseBackupPort();
+            if (useSandbox)
+                apns.UseSandbox();
+
+            await apns.SendAsync(push);
+
+            httpHandlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Once(),
+                    ItExpr.Is<HttpRequestMessage>(m => m.RequestUri == new Uri(expectedUrl)),
+                    ItExpr.IsAny<CancellationToken>());
+        }
+
         public static IEnumerable<object[]> Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data => new[]
         {
             new object[]
@@ -158,7 +182,7 @@ namespace dotAPNS.Tests
             }
         };
 
-        (IApnsClient apns, Mock<HttpMessageHandler> httpHandlerMock) BoostrapApnsClient(int statusCode = 200, string responseContent = "{}")
+        (ApnsClient apns, Mock<HttpMessageHandler> httpHandlerMock) BoostrapApnsClient(int statusCode = 200, string responseContent = "{}")
         {
             var httpHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
             httpHandler.Protected()

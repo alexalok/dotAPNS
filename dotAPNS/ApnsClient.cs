@@ -35,8 +35,8 @@ namespace dotAPNS
 
     public class ApnsClient : IApnsClient
     {
-        const string DevelopmentEndpoint = "https://api.development.push.apple.com:443/3/device/";
-        const string ProductionEndpoint = "https://api.push.apple.com:443/3/device/";
+        internal const string DevelopmentEndpoint = "https://api.development.push.apple.com";
+        internal const string ProductionEndpoint = "https://api.push.apple.com";
 
 #if NET46
         readonly CngKey _key;
@@ -61,6 +61,7 @@ namespace dotAPNS
 
         readonly string _bundleId;
         bool _useSandbox;
+        bool _useBackupPort;
 
         ApnsClient(HttpClient http, [NotNull] X509Certificate cert)
         {
@@ -123,7 +124,11 @@ namespace dotAPNS
 
             var payload = push.GeneratePayload();
 
-            var req = new HttpRequestMessage(HttpMethod.Post, (_useSandbox ? DevelopmentEndpoint : ProductionEndpoint) + (push.Token ?? push.VoipToken));
+            string url = (_useSandbox ? DevelopmentEndpoint : ProductionEndpoint)
+                + (_useBackupPort ? ":2197" : ":443")
+                + "/3/device/"
+                + (push.Token ?? push.VoipToken);
+            var req = new HttpRequestMessage(HttpMethod.Post, url);
             req.Version = new Version(2, 0);
             req.Headers.Add("apns-priority", push.Priority.ToString());
             req.Headers.Add("apns-push-type", push.Type.ToString().ToLowerInvariant());
@@ -256,6 +261,17 @@ namespace dotAPNS
         public ApnsClient UseSandbox()
         {
             _useSandbox = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Use port 2197 instead of 443 to connect to the APNs server.
+        /// You might use this port to allow APNs traffic through your firewall but to block other HTTPS traffic.
+        /// </summary>
+        /// <returns></returns>
+        public ApnsClient UseBackupPort()
+        {
+            _useBackupPort = true;
             return this;
         }
 

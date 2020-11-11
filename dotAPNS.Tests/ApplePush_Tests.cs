@@ -170,5 +170,41 @@ namespace dotAPNS.Tests
             const string referenceJson = "{\"aps\":{\"content-available\":\"1\",\"mutable-content\":\"1\",\"alert\":{\"title\":\"title\",\"body\":\"body\"}}}";
             Assert.Equal(referenceJson, payloadJson);
         }
+
+        [Fact]
+        public void Creating_Push_With_Alert_Only_Body()
+        {
+            var push = new ApplePush(ApplePushType.Alert)
+                .AddAlert("body");
+
+            var payload = push.GeneratePayload();
+            string payloadJson = JsonConvert.SerializeObject(payload);
+            const string referenceJson = "{\"aps\":{\"alert\":\"body\"}}";
+            Assert.Equal(referenceJson, payloadJson);
+        }
+
+        [Fact]
+        public void Creating_Push_With_Alert_Title_Body()
+        {
+            var push = new ApplePush(ApplePushType.Alert)
+                .AddAlert("title", "body");
+
+            var payload = push.GeneratePayload();
+            string payloadJson = JsonConvert.SerializeObject(payload);
+            const string referenceJson = "{\"aps\":{\"alert\":{\"title\":\"title\",\"body\":\"body\"}}}";
+            Assert.Equal(referenceJson, payloadJson);
+        }
+
+        [Fact]
+        public void Creating_Push_With_Alert_Title_Body_Subtitle()
+        {
+            var push = new ApplePush(ApplePushType.Alert)
+                .AddAlert("title", "subtitle", "body");
+
+            var payload = push.GeneratePayload();
+            string payloadJson = JsonConvert.SerializeObject(payload);
+            const string referenceJson = "{\"aps\":{\"alert\":{\"title\":\"title\",\"subtitle\":\"subtitle\",\"body\":\"body\"}}}";
+            Assert.Equal(referenceJson, payloadJson);
+        }
     }
 }

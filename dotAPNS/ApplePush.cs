@@ -118,6 +118,21 @@ namespace dotAPNS
         /// Add alert to the payload.
         /// </summary>
         /// <param name="title">Alert title. Can be null.</param>
+        /// <param name="subtitle">Alert subtitle. Can be null.</param>
+        /// <param name="body">Alert body. <b>Cannot be null.</b></param>
+        /// <returns></returns>
+        public ApplePush AddAlert([CanBeNull] string title, [CanBeNull] string subtitle, [NotNull] string body)
+        {
+            Alert = new ApplePushAlert(title, subtitle, body);
+            if (title == null)
+                _sendAlertAsText = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Add alert to the payload.
+        /// </summary>
+        /// <param name="title">Alert title. Can be null.</param>
         /// <param name="body">Alert body. <b>Cannot be null.</b></param>
         /// <returns></returns>
         public ApplePush AddAlert([CanBeNull] string title, [NotNull] string body)
@@ -268,8 +283,10 @@ namespace dotAPNS
                 object alert;
                 if (_sendAlertAsText)
                     alert = Alert.Body;
-                else
+                else if (Alert.Subtitle == null)
                     alert = new { title = Alert.Title, body = Alert.Body };
+                else
+                    alert = new { title = Alert.Title, subtitle = Alert.Subtitle, body = Alert.Body };
                 payload.aps.alert = alert;
             }
 
@@ -303,11 +320,20 @@ namespace dotAPNS
     {
         public string Title { get; }
 
+        public string Subtitle { get; }
+
         public string Body { get; }
 
         public ApplePushAlert([CanBeNull] string title, [NotNull] string body)
         {
             Title = title;
+            Body = body ?? throw new ArgumentNullException(nameof(body));
+        }
+
+        public ApplePushAlert([CanBeNull] string title, [CanBeNull] string subtitle, [NotNull] string body)
+        {
+            Title = title;
+            Subtitle = subtitle;
             Body = body ?? throw new ArgumentNullException(nameof(body));
         }
     }

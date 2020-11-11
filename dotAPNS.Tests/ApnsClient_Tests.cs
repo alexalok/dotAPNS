@@ -30,7 +30,7 @@ namespace dotAPNS.Tests
         [Fact]
         public void Sending_NonVoip_Type_With_Voip_Cert_Fails()
         {
-#if !NETCOREAPP3_0
+#if !NETCOREAPP3_1
             return;
 #endif
             var apns = ApnsClient.CreateUsingCert(_certs.P12Cert);
@@ -42,7 +42,7 @@ namespace dotAPNS.Tests
         [Fact]
         public void Creating_Client_With_Cert_Not_Fails_Only_On_NetCore3_0()
         {
-#if !NETCOREAPP3_0
+#if !NETCOREAPP3_1
             Assert.Throws<NotSupportedException>(() => ApnsClient.CreateUsingCert(_certs.P12Cert));
 #else
             ApnsClient.CreateUsingCert(_certs.P12Cert);

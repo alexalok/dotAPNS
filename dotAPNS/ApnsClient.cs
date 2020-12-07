@@ -10,6 +10,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
@@ -30,7 +31,7 @@ namespace dotAPNS
 
         [NotNull]
         [ItemNotNull]
-        Task<ApnsResponse> SendAsync(ApplePush push);
+        Task<ApnsResponse> SendAsync(ApplePush push, CancellationToken ct=default);
     }
 
     public class ApnsClient : IApnsClient
@@ -114,7 +115,7 @@ namespace dotAPNS
             return SendAsync(push);
         }
 
-        public async Task<ApnsResponse> SendAsync(ApplePush push)
+        public async Task<ApnsResponse> SendAsync(ApplePush push, CancellationToken ct=default)
         {
             if (_useCert)
             {
@@ -146,7 +147,7 @@ namespace dotAPNS
 
             req.Content = new JsonContent(payload);
 
-            var resp = await _http.SendAsync(req).ConfigureAwait(false);
+            var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
             var respContent = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             // Process status codes specified by APNs documentation

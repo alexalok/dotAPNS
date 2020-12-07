@@ -166,6 +166,21 @@ namespace dotAPNS.Tests
                     ItExpr.IsAny<CancellationToken>());
         }
 
+        [Fact]
+        public Task SendAsync_Throws_When_Canceled()
+        {
+            var (apns, httpHandlerMock) = BoostrapApnsClient(delay:TimeSpan.FromSeconds(10));
+            var push = CreateStubPush();
+            return Assert.ThrowsAsync<TaskCanceledException>(async () =>
+            {
+                var cts = new CancellationTokenSource();
+                Task sendTask = apns.SendAsync(push, cts.Token);
+                await Task.Delay(TimeSpan.FromMilliseconds(1));
+                cts.Cancel();
+                await sendTask;
+            });
+        }
+
         public static IEnumerable<object[]> Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data => new[]
         {
             new object[]
@@ -182,8 +197,9 @@ namespace dotAPNS.Tests
             }
         };
 
-        (ApnsClient apns, Mock<HttpMessageHandler> httpHandlerMock) BoostrapApnsClient(int statusCode = 200, string responseContent = "{}")
+        (ApnsClient apns, Mock<HttpMessageHandler> httpHandlerMock) BoostrapApnsClient(int statusCode = 200, string responseContent = "{}", TimeSpan delay=default)
         {
+            if(delay==default) delay = TimeSpan.FromMilliseconds(1);
             var httpHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
             httpHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>(
@@ -193,7 +209,7 @@ namespace dotAPNS.Tests
                 )
                 .Returns<HttpRequestMessage, CancellationToken>(async (r, c) =>
                 {
-                    await Task.Delay(TimeSpan.FromMilliseconds(1), c).ConfigureAwait(false); // technically library-side code, thus ignoring sync ctx
+                    await Task.Delay(delay, c).ConfigureAwait(false); // technically library-side code, thus ignoring sync ctx
                     return new HttpResponseMessage()
                     {
                         StatusCode = (HttpStatusCode) statusCode,

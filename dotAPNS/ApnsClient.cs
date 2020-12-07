@@ -174,7 +174,7 @@ namespace dotAPNS
             }
 
             Debug.Assert(errorPayload != null);
-            return ApnsResponse.Error(errorPayload.Reason, errorPayload.ReasonRaw);
+            return ApnsResponse.Error(errorPayload.Reason, errorPayload.ReasonRaw, errorPayload.Timestamp);
         }
 
         public static ApnsClient CreateUsingJwt([NotNull] HttpClient http, [NotNull] ApnsJwtOptions options)

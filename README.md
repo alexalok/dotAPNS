@@ -46,7 +46,7 @@ var options = new ApnsJwtOptions()
     // CertFilePath = "secret.p8", // use either CertContent or CertFilePath, not both
     KeyId = "key", 
     TeamId = "team"
-});
+};
 ```
 
 `BundleId` - your app’s bundle ID. Should not include specific topics (i.e. `com.myapp` but not `com.myapp.voip`).

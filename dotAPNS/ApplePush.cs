@@ -43,6 +43,15 @@ namespace dotAPNS
         public DateTimeOffset? Expiration { get; private set; }
 
         /// <summary>
+        /// An identifier you use to coalesce multiple notifications into a single notification for the user. 
+        /// Typically, each notification request causes a new notification to be displayed on the user’s device. 
+        /// When sending the same notification more than once, use the same value in this header to coalesce the requests.
+        /// <b>The value of this key must not exceed 64 bytes.</b>
+        /// </summary>
+        [CanBeNull]
+        public string CollapseId { get; private set; }
+
+        /// <summary>
         /// User-defined properties that will be attached to the root payload dictionary.
         /// </summary>
         public Dictionary<string, object> CustomProperties { get; set; }
@@ -253,6 +262,16 @@ namespace dotAPNS
                 CustomProperties ??= new Dictionary<string, object>();
                 CustomProperties.Add(key, value);
             }
+            return this;
+        }
+
+        public ApplePush AddCollapseId([NotNull] string collapseId)
+        {
+            if (string.IsNullOrEmpty(collapseId))
+                throw new ArgumentException($"'{nameof(collapseId)}' cannot be null or empty", nameof(collapseId));
+            if (!string.IsNullOrEmpty(CollapseId))
+                throw new InvalidOperationException($"{nameof(CollapseId)} is already added.");
+            CollapseId = collapseId;
             return this;
         }
 

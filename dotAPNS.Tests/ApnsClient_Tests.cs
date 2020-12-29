@@ -181,6 +181,43 @@ namespace dotAPNS.Tests
             });
         }
 
+        [Fact]
+        public async Task Adding_Collapse_Id_Sets_Header()
+        {
+            var (apns, httpHandlerMock) = BoostrapApnsClient();
+            var push = CreateStubPush();
+            push.AddCollapseId("test_collapse_id");
+
+            await apns.SendAsync(push);
+
+            httpHandlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Once(),
+                    ItExpr.Is<HttpRequestMessage>(m => m.Headers.Single(h => h.Key == "apns-collapse-id").Value.Single() == "test_collapse_id"),
+                    ItExpr.IsAny<CancellationToken>()
+                );
+        }
+
+        [Fact]
+        public async Task No_Collapse_Id_Header_If_Collapse_Id_Is_Not_Added()
+        {
+            var (apns, httpHandlerMock) = BoostrapApnsClient();
+            var push = CreateStubPush();
+
+            await apns.SendAsync(push);
+
+            httpHandlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Once(),
+                    ItExpr.Is<HttpRequestMessage>(m => m.Headers.All(h => h.Key != "apns-collapse-id")),
+                    ItExpr.IsAny<CancellationToken>()
+                );
+        }
+
         public static IEnumerable<object[]> Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data => new[]
         {
             new object[]

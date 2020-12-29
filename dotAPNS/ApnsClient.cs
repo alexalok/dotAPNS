@@ -144,7 +144,8 @@ namespace dotAPNS
                 else
                     req.Headers.Add("apns-expiration", exp.ToUnixTimeSeconds().ToString());
             }
-
+            if (!string.IsNullOrEmpty(push.CollapseId))
+                req.Headers.Add("apns-collapse-id", push.CollapseId);
             req.Content = new JsonContent(payload);
 
             var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);

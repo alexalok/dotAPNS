@@ -1,0 +1,32 @@
+name: Test
+
+on:
+  [push]
+  
+env:
+  dotapns_tests_p8_contents: ${{secrets.DOTAPNS_TESTS_P8_CONTENTS}}
+  dotapns_tests_p8_path: ${{secrets.DOTAPNS_TESTS_P8_PATH}}
+  dotapns_tests_p12_base64enc: ${{secrets.DOTAPNS_TESTS_P12_BASE64ENC}}  
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Create test JWT file
+      run: echo "$dotapns_tests_p8_contents" > "jwt.p8"
+      shell: bash
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Test for .NET Core 2.1
+      run: dotnet test --no-build --verbosity normal --framework netcoreapp2.1
+    - name: Test for .NET Core 3.1
+      run: dotnet test --no-build --verbosity normal --framework netcoreapp3.1
+    - name: Test for .NET Framework 4.6
+      run: dotnet test --no-build --verbosity normal --framework net46
+      if: matrix.os == 'windows-latest'

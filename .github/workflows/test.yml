@@ -19,6 +19,8 @@ jobs:
     - name: Create test JWT file
       run: echo "$dotapns_tests_p8_contents" > "jwt.p8"
       shell: bash
+    - name: Clear local NuGet cache (workaround for failed restores on windows-latest)
+      run: dotnet nuget locals all --clear
     - name: Restore dependencies
       run: dotnet restore
     - name: Build

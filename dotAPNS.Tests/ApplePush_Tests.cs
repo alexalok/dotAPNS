@@ -206,5 +206,42 @@ namespace dotAPNS.Tests
             const string referenceJson = "{\"aps\":{\"alert\":{\"title\":\"title\",\"subtitle\":\"subtitle\",\"body\":\"body\"}}}";
             Assert.Equal(referenceJson, payloadJson);
         }
+
+        [Fact]
+        public void Creating_Push_With_Localized_Alert_Key_And_Args()
+        {
+            var push = new ApplePush(ApplePushType.Alert)
+                .AddLocalizedAlert("LOCALIZED_KEY", new[] {"LocalizedArg"});
+
+            var payload = push.GeneratePayload();
+            var payloadJson = JsonConvert.SerializeObject(payload, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            const string referenceJson = "{\"aps\":{\"alert\":{\"loc-key\":\"LOCALIZED_KEY\",\"loc-args\":[\"LocalizedArg\"]}}}";
+            Assert.Equal(referenceJson, payloadJson);
+        }
+        
+        [Fact]
+        public void Creating_Push_With_Localized_Alert_TitleKey_TitleKeyArgs_Key_Args_ActionKey()
+        {
+            var push = new ApplePush(ApplePushType.Alert)
+                .AddLocalizedAlert("LOCALIZED_TITLE", new[] { "LocalizedTitleArgument", "5"}, "LOCALIZED_KEY", new[] {"LocalizedArg", "6"}, "LOCALIZED_ACTION" );
+
+            var payload = push.GeneratePayload();
+            var payloadJson = JsonConvert.SerializeObject(payload);
+            const string referenceJson = "{\"aps\":{\"alert\":{\"title-loc-key\":\"LOCALIZED_TITLE\",\"title-loc-args\":[\"LocalizedTitleArgument\",\"5\"],\"loc-key\":\"LOCALIZED_KEY\",\"loc-args\":[\"LocalizedArg\",\"6\"],\"action-loc-key\":\"LOCALIZED_ACTION\"}}}";
+            Assert.Equal(referenceJson, payloadJson);
+        }
+        
+        [Fact]
+        public void Creating_Push_With_Alert_Only_Body_And_Localized_Alert_Should_Return_Only_Alert()
+        {
+            var push = new ApplePush(ApplePushType.Alert)
+                .AddAlert("body")
+                .AddLocalizedAlert("LOCALIZED_KEY", new[] {"LocalizedArg"});
+
+            var payload = push.GeneratePayload();
+            string payloadJson = JsonConvert.SerializeObject(payload);
+            const string referenceJson = "{\"aps\":{\"alert\":\"body\"}}";
+            Assert.Equal(referenceJson, payloadJson);
+        }
     }
 }

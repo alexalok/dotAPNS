@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Security.Cryptography.X509Certificates;
 using JetBrains.Annotations;
+using Newtonsoft.Json;
 
 namespace dotAPNS
 {
@@ -20,6 +22,9 @@ namespace dotAPNS
 
         [CanBeNull]
         public ApplePushAlert Alert { get; private set; }
+        
+        [CanBeNull]
+        public ApplePushLocalizedAlert LocalizedAlert { get; private set; }
 
         public int? Badge { get; private set; }
 
@@ -160,6 +165,32 @@ namespace dotAPNS
         public ApplePush AddAlert([NotNull] string body)
         {
             return AddAlert(null, body);
+        }
+
+        /// <summary>
+        /// Add localized alert to the payload. When alert is already present, localized alert will be omitted when generating payload.
+        /// </summary>
+        /// <param name="locKey">Key to an alert-message string in a Localizable.strings file for the current localization. <b>Cannot be null.</b></param>
+        /// <param name="locArgs">Variable string values to appear in place of the format specifiers in loc-key. <b>Cannot be null.</b></param>
+        /// <param name="titleLocKey">The key to a title string in the Localizable.strings file for the current localization. Can be null.</param>
+        /// <param name="tittleLocArgs">Variable string values to appear in place of the format specifiers in title-loc-key. Can be null.</param>
+        /// <param name="actionLocKey">The string is used as a key to get a localized string in the current localization to use for the right button’s title instead of “View". Can be null.</param>
+        /// <returns></returns>
+        public ApplePush AddLocalizedAlert([CanBeNull] string titleLocKey, [CanBeNull] string[] tittleLocArgs, [NotNull] string locKey, [NotNull] string[] locArgs, [CanBeNull] string actionLocKey)
+        {
+            LocalizedAlert = new ApplePushLocalizedAlert(titleLocKey, tittleLocArgs, locKey, locArgs, actionLocKey);
+            return this;
+        }
+        
+        /// <summary>
+        /// Add localized alert to the payload. When alert is already present, localized alert will be omitted when generating payload.
+        /// </summary>
+        /// <param name="locKey">Key to an alert-message string in a Localizable.strings file for the current localization. <b>Cannot be null.</b></param>
+        /// <param name="locArgs">Variable string values to appear in place of the format specifiers in loc-key. <b>Cannot be null.</b></param>
+        /// <returns></returns>
+        public ApplePush AddLocalizedAlert([NotNull] string locKey, [NotNull] string[] locArgs)
+        {
+            return AddLocalizedAlert(null, null, locKey, locArgs, null);
         }
 
         public ApplePush SetPriority(int priority)
@@ -308,6 +339,11 @@ namespace dotAPNS
                     alert = new { title = Alert.Title, subtitle = Alert.Subtitle, body = Alert.Body };
                 payload.aps.alert = alert;
             }
+            else if (LocalizedAlert != null)
+            {
+                object localizedAlert = LocalizedAlert;
+                payload.aps.alert = localizedAlert;
+            }
 
             if (Badge != null)
                 payload.aps.badge = Badge.Value;
@@ -354,6 +390,40 @@ namespace dotAPNS
             Title = title;
             Subtitle = subtitle;
             Body = body ?? throw new ArgumentNullException(nameof(body));
+        }
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
+    public class ApplePushLocalizedAlert
+    {
+        [JsonProperty("title-loc-key")]
+        public string TitleLocKey { get; }
+        
+        [JsonProperty("title-loc-args")]
+        public string[] TitleLocArgs { get; }
+        
+        [JsonProperty("loc-key")]
+        public string LocKey { get; }
+        
+        [JsonProperty("loc-args")]
+        public string[] LocArgs { get; }
+        
+        [JsonProperty("action-loc-key")]
+        public string ActionLocKey { get; }
+
+        public ApplePushLocalizedAlert([NotNull] string locKey, [NotNull] string[] locArgs)
+        {
+            LocKey = locKey ?? throw new ArgumentNullException(nameof(locKey));
+            LocArgs = locArgs ?? throw new ArgumentNullException(nameof(locArgs));
+        }
+
+        public ApplePushLocalizedAlert(string titleLocKey, string[] titleLocArgs, string locKey, string[] locArgs, string actionLocKey)
+        {
+            TitleLocKey = titleLocKey;
+            TitleLocArgs = titleLocArgs;
+            LocKey = locKey ?? throw new ArgumentNullException(nameof(locKey));;
+            LocArgs = locArgs ?? throw new ArgumentNullException(nameof(locArgs));
+            ActionLocKey = actionLocKey;
         }
     }
 

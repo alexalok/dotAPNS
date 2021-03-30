@@ -1,10 +1,7 @@
 name: Publish to nuget
 on:
-  push:
-    branches: 
-      - main
-    tags:
-      - v[0-9]*
+  release: 
+    types: [created]
 jobs:
   publish:
     name: build, pack & publish
@@ -32,7 +29,7 @@ jobs:
           # VERSION_STATIC: 1.0.0
 
           # Flag to toggle git tagging, enabled by default
-          TAG_COMMIT: false
+          TAG_COMMIT: true
 
           # Format of the git tag, [*] gets replaced with actual version
           # TAG_FORMAT: v*

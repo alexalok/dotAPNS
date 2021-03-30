@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using dotAPNS.AspNetCore;
+using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 using Xunit;
@@ -82,7 +83,7 @@ namespace dotAPNS.Tests
                 });
             httpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient(httpHandler.Object));
             var apnsClientFactory = new ApnsClientFactory(httpClientFactory.Object);
-            var service = new ApnsService(apnsClientFactory);
+            var service = new ApnsService(apnsClientFactory, new OptionsWrapper<ApnsServiceOptions>(new ApnsServiceOptions()));
             return service;
         }
 

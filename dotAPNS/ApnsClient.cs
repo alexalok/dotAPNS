@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
@@ -7,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -29,6 +31,8 @@ namespace dotAPNS
         [Obsolete("Please use " + nameof(SendAsync) + " instead")]
         Task<ApnsResponse> Send(ApplePush push);
 
+        /// <exception cref="HttpRequestException">Exception occured during connection to an APNs service.</exception>
+        /// <exception cref="ApnsCertificateExpiredException">APNs certificate used to connect to an APNs service is expired and needs to be renewed.</exception>
         [NotNull]
         [ItemNotNull]
         Task<ApnsResponse> SendAsync(ApplePush push, CancellationToken ct=default);
@@ -148,7 +152,20 @@ namespace dotAPNS
                 req.Headers.Add("apns-collapse-id", push.CollapseId);
             req.Content = new JsonContent(payload);
 
-            var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+            HttpResponseMessage resp;
+            try
+            {
+                resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+            }
+            catch (HttpRequestException ex) when (
+                (Environment.OSVersion.Platform is PlatformID.Win32NT &&
+                ex.InnerException is AuthenticationException { InnerException: Win32Exception { NativeErrorCode: -2146893016 } }) ||
+                (Environment.OSVersion.Platform is PlatformID.Unix &&
+                ex.InnerException is IOException { InnerException: IOException { InnerException: IOException { InnerException: { InnerException: { HResult: 336151573 } } } } }))
+            {
+                throw new ApnsCertificateExpiredException(innerException: ex);
+            }
+
             var respContent = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             // Process status codes specified by APNs documentation

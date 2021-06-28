@@ -1,14 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using ExpectedObjects;
+using JetBrains.Annotations;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json.Bson;
@@ -218,6 +224,37 @@ namespace dotAPNS.Tests
                 );
         }
 
+        [FactOnlyFor(PlatformID.Win32NT)]
+        public async Task Ensure_SendAsync_Throws_On_Expired_Certificate_On_Windows()
+        {
+            // Arrange
+            var ex = new HttpRequestException(null,
+                new AuthenticationException(null,
+                    new Win32Exception(- 2146893016)));
+            var (apns, httpHandlerMock) = BoostrapApnsClient(throwOnResponse: ex);
+            var push = CreateStubPush();
+
+            // Act and Assert
+            await Assert.ThrowsAsync<ApnsCertificateExpiredException>(() => apns.SendAsync(push));
+        }
+
+        [FactOnlyFor(PlatformID.Unix)]
+        public async Task Ensure_SendAsync_Throws_On_Expired_Certificate_On_Linux()
+        {
+            // Arrange
+            var ex = new HttpRequestException(null,
+                new IOException(null,
+                    new IOException(null,
+                        new IOException(null,
+                            new Exception(null,
+                                new ExternalException(null, 336151573))))));
+            var (apns, httpHandlerMock) = BoostrapApnsClient(throwOnResponse: ex);
+            var push = CreateStubPush();
+
+            // Act and Assert
+            await Assert.ThrowsAsync<ApnsCertificateExpiredException>(() => apns.SendAsync(push));
+        }
+
         public static IEnumerable<object[]> Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data => new[]
         {
             new object[]
@@ -234,17 +271,24 @@ namespace dotAPNS.Tests
             }
         };
 
-        (ApnsClient apns, Mock<HttpMessageHandler> httpHandlerMock) BoostrapApnsClient(int statusCode = 200, string responseContent = "{}", TimeSpan delay=default)
+        (ApnsClient apns, Mock<HttpMessageHandler> httpHandlerMock) BoostrapApnsClient(int statusCode = 200, string responseContent = "{}", TimeSpan delay=default, [CanBeNull] Exception throwOnResponse = null)
         {
             if(delay==default) delay = TimeSpan.FromMilliseconds(1);
             var httpHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
-            httpHandler.Protected()
+            var sendAsyncSetup = httpHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>()
-                )
-                .Returns<HttpRequestMessage, CancellationToken>(async (r, c) =>
+                );
+
+            if (throwOnResponse != null)
+            {
+                sendAsyncSetup.ThrowsAsync(throwOnResponse);
+            }
+            else
+            {
+                sendAsyncSetup.Returns<HttpRequestMessage, CancellationToken>(async (r, c) =>
                 {
                     await Task.Delay(delay, c).ConfigureAwait(false); // technically library-side code, thus ignoring sync ctx
                     return new HttpResponseMessage()
@@ -253,6 +297,8 @@ namespace dotAPNS.Tests
                         Content = new JsonContent(responseContent)
                     };
                 });
+            }
+                
             var jwt = CreateStubJwt();
             var client = ApnsClient.CreateUsingJwt(new HttpClient(httpHandler.Object), jwt);
             return (client, httpHandler);

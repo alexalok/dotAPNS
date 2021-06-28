@@ -117,6 +117,10 @@ catch (HttpRequestException ex)
 {
     Console.WriteLine("Failed to send a push. HTTP request failed: " + ex);
 }
+catch (ApnsCertificateExpiredException)
+{
+    Console.WriteLine("APNs certificate has expired. No more push notifications can be sent using it until it is replaced with a new one.");
+}
 ```
 
 ## Background (aka "silent") push

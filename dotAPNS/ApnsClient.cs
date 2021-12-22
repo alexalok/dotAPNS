@@ -304,6 +304,8 @@ namespace dotAPNS
                     break;
                 case ApplePushType.Voip:
                     return _bundleId + ".voip";
+                case ApplePushType.Location:
+                    return _bundleId + ".location-query";
                 case ApplePushType.Unknown:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(pushType), pushType, null);

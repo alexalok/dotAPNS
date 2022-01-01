@@ -243,5 +243,19 @@ namespace dotAPNS.Tests
             const string referenceJson = "{\"aps\":{\"alert\":\"body\"}}";
             Assert.Equal(referenceJson, payloadJson);
         }
+
+        [Fact]
+        public void Creating_Push_With_Development_Server_Should_Set_Property()
+        {
+            var prodPush = new ApplePush(ApplePushType.Alert)
+                .AddAlert("body");
+
+            var devPush = new ApplePush(ApplePushType.Alert)
+                .AddAlert("body")
+                .SendToDevelopmentServer();
+
+            Assert.False(prodPush.IsSendToDevelopmentServer);
+            Assert.True(devPush.IsSendToDevelopmentServer);
+        }
     }
 }

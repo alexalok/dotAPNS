@@ -148,11 +148,11 @@ namespace dotAPNS.Tests
         }
 
         [Theory]
-        [InlineData(true, true, "https://api.development.push.apple.com:2197/3/device/token")]
-        [InlineData(true, false, "https://api.push.apple.com:2197/3/device/token")]
-        [InlineData(false, true, "https://api.development.push.apple.com:443/3/device/token")]
-        [InlineData(false, false, "https://api.push.apple.com:443/3/device/token")]
-        public async Task SendAsync_Uses_Correct_Port(bool useBackupPort, bool useSandbox, string expectedUrl)
+        [InlineData(true, true, "2197")]
+        [InlineData(true, false, "2197")]
+        [InlineData(false, true, "")]
+        [InlineData(false, false, "")]
+        public async Task SendAsync_Uses_Correct_Port(bool useBackupPort, bool useSandbox, string expectedPort)
         {
             var (apns, httpHandlerMock) = BoostrapApnsClient();
             var push = CreateStubPush();
@@ -168,7 +168,39 @@ namespace dotAPNS.Tests
                 .Verify<Task<HttpResponseMessage>>(
                     "SendAsync",
                     Times.Once(),
-                    ItExpr.Is<HttpRequestMessage>(m => m.RequestUri == new Uri(expectedUrl)),
+                    ItExpr.Is<HttpRequestMessage>(m =>
+                        m.RequestUri.GetComponents(UriComponents.Port, UriFormat.Unescaped) ==
+                        expectedPort),
+                    ItExpr.IsAny<CancellationToken>());
+        }
+
+        [Theory]
+        [InlineData(false, false, ApnsClient.ProductionEndpoint)]
+        [InlineData(false, true, ApnsClient.DevelopmentEndpoint)]
+        [InlineData(true, false, ApnsClient.DevelopmentEndpoint)] 
+        [InlineData(true, true, ApnsClient.DevelopmentEndpoint)]
+        public async Task SendAsync_Should_Use_Correct_Environment_Server(bool isClientDevelopment, bool isPushDevelopment, 
+            string expectedUrl)
+        {
+            var (apns, httpHandlerMock) = BoostrapApnsClient();
+
+            var push = CreateStubPush();
+            if (isPushDevelopment)
+                push.SendToDevelopmentServer();
+
+            if (isClientDevelopment)
+                apns.UseSandbox();
+
+            await apns.SendAsync(push);
+
+            httpHandlerMock
+                .Protected()
+                .Verify<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    Times.Once(),
+                    ItExpr.Is<HttpRequestMessage>(m =>
+                        m.RequestUri.GetComponents(UriComponents.Scheme | UriComponents.Host, UriFormat.Unescaped) ==
+                        expectedUrl),
                     ItExpr.IsAny<CancellationToken>());
         }
 

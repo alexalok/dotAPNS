@@ -40,7 +40,7 @@ namespace dotAPNS
 
     public class ApnsClient : IApnsClient
     {
-        internal const string DevelopmentEndpoint = "https://api.development.push.apple.com";
+        internal const string DevelopmentEndpoint = "https://api.sandbox.push.apple.com";
         internal const string ProductionEndpoint = "https://api.push.apple.com";
 
 #if NET46
@@ -129,7 +129,7 @@ namespace dotAPNS
 
             var payload = push.GeneratePayload();
 
-            string url = (_useSandbox ? DevelopmentEndpoint : ProductionEndpoint)
+            string url = (_useSandbox || push.IsSendToDevelopmentServer ? DevelopmentEndpoint :  ProductionEndpoint)
                 + (_useBackupPort ? ":2197" : ":443")
                 + "/3/device/"
                 + (push.Token ?? push.VoipToken);
@@ -277,6 +277,7 @@ namespace dotAPNS
             return CreateUsingCert(cert);
         }
 
+        [Obsolete("Please use ApplePush.SendToDevelopmentServer() to set sandbox on a per-push level instead.")]
         public ApnsClient UseSandbox()
         {
             _useSandbox = true;

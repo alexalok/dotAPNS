@@ -1,13 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29418.71
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dotAPNS", "dotAPNS\dotAPNS.csproj", "{04BE6D94-9409-4EF6-884D-CBA9209B6D19}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dotAPNS.Tests", "dotAPNS.Tests\dotAPNS.Tests.csproj", "{114A89DB-1A6E-49B2-BAD2-6F92CF18F2F0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dotAPNS.AspNetCore", "dotAPNS.AspNetCore\dotAPNS.AspNetCore.csproj", "{42A35A1E-F7A3-44D6-87B8-CF4337B3FCE5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F948C532-C149-4E8F-AAC8-415008231BEC}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

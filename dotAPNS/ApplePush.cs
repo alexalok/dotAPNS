@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json.Serialization;
-using JetBrains.Annotations;
 
 namespace dotAPNS
 {
@@ -23,21 +22,18 @@ namespace dotAPNS
         /// </summary>
         public int? CustomPriority { get; private set; }
 
-        [CanBeNull]
+        
         public ApplePushAlert? Alert { get; private set; }
 
-        [CanBeNull]
         public ApplePushLocalizedAlert? LocalizedAlert { get; private set; }
 
         public int? Badge { get; private set; }
 
-        [CanBeNull]
         public string? Sound { get; private set; }
 
         /// <summary>
         /// See <a href="https://developer.apple.com/documentation/usernotifications/unnotificationcontent/1649866-categoryidentifier">official documentation</a> for reference.
         /// </summary>
-        [CanBeNull]
         public string? Category { get; private set; }
 
         public bool IsContentAvailable { get; private set; }
@@ -56,18 +52,17 @@ namespace dotAPNS
         /// When sending the same notification more than once, use the same value in this header to coalesce the requests.
         /// <b>The value of this key must not exceed 64 bytes.</b>
         /// </summary>
-        [CanBeNull]
         public string? CollapseId { get; private set; }
 
         /// <summary>
         /// User-defined properties that will be attached to the root payload dictionary.
         /// </summary>
-        public Dictionary<string, object> CustomProperties { get; set; }
+        public Dictionary<string, object>? CustomProperties { get; set; }
 
         /// <summary>
         /// User-defined properties that will be attached to the <i>aps</i> payload dictionary.
         /// </summary>
-        public IDictionary<string, object> CustomApsProperties { get; set; }
+        public IDictionary<string, object>? CustomApsProperties { get; set; }
 
         /// <summary>
         /// Indicates whether alert must be sent as a string. 
@@ -140,7 +135,7 @@ namespace dotAPNS
         /// <param name="subtitle">Alert subtitle. Can be null.</param>
         /// <param name="body">Alert body. <b>Cannot be null.</b></param>
         /// <returns></returns>
-        public ApplePush AddAlert([CanBeNull] string title, [CanBeNull] string subtitle, [NotNull] string body)
+        public ApplePush AddAlert(string? title, string? subtitle, string body)
         {
             Alert = new ApplePushAlert(title, subtitle, body);
             if (title == null)
@@ -154,7 +149,7 @@ namespace dotAPNS
         /// <param name="title">Alert title. Can be null.</param>
         /// <param name="body">Alert body. <b>Cannot be null.</b></param>
         /// <returns></returns>
-        public ApplePush AddAlert([CanBeNull] string title, [NotNull] string body)
+        public ApplePush AddAlert(string? title, string body)
         {
             Alert = new ApplePushAlert(title, body);
             if (title == null)
@@ -167,7 +162,7 @@ namespace dotAPNS
         /// </summary>
         /// <param name="body">Alert body. <b>Cannot be null.</b></param>
         /// <returns></returns>
-        public ApplePush AddAlert([NotNull] string body)
+        public ApplePush AddAlert(string body)
         {
             return AddAlert(null, body);
         }
@@ -181,8 +176,8 @@ namespace dotAPNS
         /// <param name="tittleLocArgs">Variable string values to appear in place of the format specifiers in title-loc-key. Can be null.</param>
         /// <param name="actionLocKey">The string is used as a key to get a localized string in the current localization to use for the right button’s title instead of “View". Can be null.</param>
         /// <returns></returns>
-        public ApplePush AddLocalizedAlert([CanBeNull] string titleLocKey, [CanBeNull] string[] tittleLocArgs,
-            [NotNull] string locKey, [NotNull] string[] locArgs, [CanBeNull] string actionLocKey)
+        public ApplePush AddLocalizedAlert(string? titleLocKey, string[]? tittleLocArgs,
+            string locKey, string[] locArgs, string? actionLocKey)
         {
             LocalizedAlert = new ApplePushLocalizedAlert(titleLocKey, tittleLocArgs, locKey, locArgs, actionLocKey);
             return this;
@@ -194,7 +189,7 @@ namespace dotAPNS
         /// <param name="locKey">Key to an alert-message string in a Localizable.strings file for the current localization. <b>Cannot be null.</b></param>
         /// <param name="locArgs">Variable string values to appear in place of the format specifiers in loc-key. <b>Cannot be null.</b></param>
         /// <returns></returns>
-        public ApplePush AddLocalizedAlert([NotNull] string locKey, [NotNull] string[] locArgs)
+        public ApplePush AddLocalizedAlert(string locKey, string[] locArgs)
         {
             return AddLocalizedAlert(null, null, locKey, locArgs, null);
         }
@@ -216,7 +211,7 @@ namespace dotAPNS
             return this;
         }
 
-        public ApplePush AddSound([NotNull] string sound = "default")
+        public ApplePush AddSound(string sound = "default")
         {
             if (string.IsNullOrWhiteSpace(sound))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(sound));
@@ -227,7 +222,7 @@ namespace dotAPNS
             return this;
         }
 
-        public ApplePush AddCategory([NotNull] string category)
+        public ApplePush AddCategory(string category)
         {
             if (string.IsNullOrWhiteSpace(category))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(category));
@@ -258,7 +253,7 @@ namespace dotAPNS
             return this;
         }
 
-        public ApplePush AddToken([NotNull] string token)
+        public ApplePush AddToken(string token)
         {
             if (string.IsNullOrWhiteSpace(token))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(token));
@@ -270,7 +265,7 @@ namespace dotAPNS
             return this;
         }
 
-        public ApplePush AddVoipToken([NotNull] string voipToken)
+        public ApplePush AddVoipToken(string voipToken)
         {
             if (string.IsNullOrWhiteSpace(voipToken))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(voipToken));
@@ -305,7 +300,7 @@ namespace dotAPNS
             return this;
         }
 
-        public ApplePush AddCollapseId([NotNull] string collapseId)
+        public ApplePush AddCollapseId(string collapseId)
         {
             if (string.IsNullOrEmpty(collapseId))
                 throw new ArgumentException($"'{nameof(collapseId)}' cannot be null or empty", nameof(collapseId));
@@ -400,13 +395,13 @@ namespace dotAPNS
         [JsonPropertyName("body")]
         public string Body { get; }
 
-        public ApplePushAlert([CanBeNull] string? title, [NotNull] string body)
+        public ApplePushAlert(string? title, string body)
         {
             Title = title;
             Body = body ?? throw new ArgumentNullException(nameof(body));
         }
 
-        public ApplePushAlert([CanBeNull] string? title, [CanBeNull] string? subtitle, [NotNull] string body)
+        public ApplePushAlert(string? title, string? subtitle, string body)
         {
             Title = title;
             Subtitle = subtitle;
@@ -432,7 +427,7 @@ namespace dotAPNS
         [JsonPropertyName("action-loc-key")]
         public string? ActionLocKey { get; }
 
-        public ApplePushLocalizedAlert([NotNull] string locKey, [NotNull] string[] locArgs)
+        public ApplePushLocalizedAlert(string locKey, string[] locArgs)
         {
             LocKey = locKey ?? throw new ArgumentNullException(nameof(locKey));
             LocArgs = locArgs ?? throw new ArgumentNullException(nameof(locArgs));

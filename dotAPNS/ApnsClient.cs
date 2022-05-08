@@ -14,7 +14,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 
 using System.Text.Json;
 using System.Net.Http.Json;
@@ -27,15 +26,11 @@ namespace dotAPNS
 {
     public interface IApnsClient
     {
-        [NotNull]
-        [ItemNotNull]
         [Obsolete("Please use " + nameof(SendAsync) + " instead")]
         Task<ApnsResponse> Send(ApplePush push);
 
         /// <exception cref="HttpRequestException">Exception occured during connection to an APNs service.</exception>
         /// <exception cref="ApnsCertificateExpiredException">APNs certificate used to connect to an APNs service is expired and needs to be renewed.</exception>
-        [NotNull]
-        [ItemNotNull]
         Task<ApnsResponse> SendAsync(ApplePush push, CancellationToken ct=default);
     }
 
@@ -47,13 +42,13 @@ namespace dotAPNS
 #if NET46
         readonly CngKey _key;
 #else
-        readonly ECDsa _key;
+        readonly ECDsa? _key;
 #endif
 
-        readonly string _keyId;
-        readonly string _teamId;
+        readonly string? _keyId;
+        readonly string? _teamId;
 
-        string _jwt;
+        string? _jwt;
         DateTime _lastJwtGenerationTime;
         readonly object _jwtRefreshLock = new object();
 
@@ -69,7 +64,7 @@ namespace dotAPNS
         bool _useSandbox;
         bool _useBackupPort;
 
-        ApnsClient(HttpClient http, [NotNull] X509Certificate cert)
+        ApnsClient(HttpClient http, X509Certificate cert)
         {
             _http = http;
             var split = cert.Subject.Split(new[] { "0.9.2342.19200300.100.1.1=" }, StringSplitOptions.RemoveEmptyEntries);
@@ -93,7 +88,7 @@ namespace dotAPNS
             _useCert = true;
         }
 
-        ApnsClient([NotNull] HttpClient http, [NotNull] ECDsa key, [NotNull] string keyId, [NotNull] string teamId, [NotNull] string bundleId)
+        ApnsClient(HttpClient http, ECDsa key, string keyId, string teamId, string bundleId)
         {
             _http = http ?? throw new ArgumentNullException(nameof(http));
             _key = key ?? throw new ArgumentNullException(nameof(key));
@@ -195,7 +190,7 @@ namespace dotAPNS
             return ApnsResponse.Error(errorPayload.Reason, errorPayload.ReasonRaw);
         }
 
-        public static ApnsClient CreateUsingJwt([NotNull] HttpClient http, [NotNull] ApnsJwtOptions options)
+        public static ApnsClient CreateUsingJwt(HttpClient http, ApnsJwtOptions options)
         {
             if (http == null) throw new ArgumentNullException(nameof(http));
             if (options == null) throw new ArgumentNullException(nameof(options));
@@ -242,7 +237,7 @@ namespace dotAPNS
             return new ApnsClient(http, key, options.KeyId, options.TeamId, options.BundleId);
         }
 
-        public static ApnsClient CreateUsingCert([NotNull] X509Certificate2 cert)
+        public static ApnsClient CreateUsingCert(X509Certificate2 cert)
         {
 #if NETSTANDARD2_0 || NET46
             throw new NotSupportedException(
@@ -261,7 +256,7 @@ namespace dotAPNS
 #endif
         }
 
-        public static ApnsClient CreateUsingCustomHttpClient([NotNull] HttpClient httpClient, [NotNull] X509Certificate2 cert)
+        public static ApnsClient CreateUsingCustomHttpClient(HttpClient httpClient, X509Certificate2 cert)
         {
             if (httpClient == null) throw new ArgumentNullException(nameof(httpClient));
             if (cert == null) throw new ArgumentNullException(nameof(cert));
@@ -270,7 +265,7 @@ namespace dotAPNS
             return apns;
         }
 
-        public static ApnsClient CreateUsingCert([NotNull] string pathToCert, string certPassword = null)
+        public static ApnsClient CreateUsingCert(string pathToCert, string certPassword = null)
         {
             if (string.IsNullOrWhiteSpace(pathToCert))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(pathToCert));

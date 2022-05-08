@@ -20,7 +20,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="2021.3.0" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" PrivateAssets="All" />
     <PackageReference Include="System.Net.Http.Json" Version="6.0.0" />
     <PackageReference Include="System.Text.Json" Version="6.0.3" />
@@ -38,6 +37,11 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
     <PackageReference Include="System.Net.Http.WinHttpHandler" Version="4.7.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\Api\" />
+    <Folder Include="Contracts\" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-
-namespace dotAPNS
+﻿namespace dotAPNS
 {
     public class ApnsResponse
     {
@@ -8,7 +6,6 @@ namespace dotAPNS
         public string ReasonString { get; }
         public bool IsSuccessful { get; }
 
-        [JsonConstructor]
         ApnsResponse(ApnsResponseReason reason, string reasonString, bool isSuccessful)
         {
             Reason = reason;

@@ -1,5 +1,6 @@
 ﻿using System;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace dotAPNS
 {
@@ -10,7 +11,7 @@ namespace dotAPNS
             Enum.TryParse<ApnsResponseReason>(ReasonRaw, out var value)
             ? value : ApnsResponseReason.Unknown;
 
-        [JsonProperty("reason")]
+        [JsonPropertyName("reason")]
         public string ReasonRaw { get; set; }
 
         [JsonConverter(typeof(UnixTimestampMillisecondsJsonConverter))] // timestamp is in milliseconds (https://openradar.appspot.com/24548417)

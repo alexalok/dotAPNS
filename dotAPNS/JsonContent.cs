@@ -1,9 +1,10 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net.Http;
 using System.Text;
-using Newtonsoft.Json;
 
-namespace dotAPNS
+namespace dotAPNS.Obsolete
 {
+    [Obsolete]
     public class JsonContent : StringContent
     {
         const string JsonMediaType = "application/json";

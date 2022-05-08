@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json.Serialization;
 using JetBrains.Annotations;
-using Newtonsoft.Json;
 
 namespace dotAPNS
 {
     public class ApplePush
     {
-        public string Token { get; private set; }
-        public string VoipToken { get; private set; }
+        public string? Token { get; private set; }
+        public string? VoipToken { get; private set; }
 
         public int Priority =>
             CustomPriority ?? (Type == ApplePushType.Background ? 5 : 10); // 5 for background, 10 for everything else
@@ -24,21 +24,21 @@ namespace dotAPNS
         public int? CustomPriority { get; private set; }
 
         [CanBeNull]
-        public ApplePushAlert Alert { get; private set; }
+        public ApplePushAlert? Alert { get; private set; }
 
         [CanBeNull]
-        public ApplePushLocalizedAlert LocalizedAlert { get; private set; }
+        public ApplePushLocalizedAlert? LocalizedAlert { get; private set; }
 
         public int? Badge { get; private set; }
 
         [CanBeNull]
-        public string Sound { get; private set; }
+        public string? Sound { get; private set; }
 
         /// <summary>
         /// See <a href="https://developer.apple.com/documentation/usernotifications/unnotificationcontent/1649866-categoryidentifier">official documentation</a> for reference.
         /// </summary>
         [CanBeNull]
-        public string Category { get; private set; }
+        public string? Category { get; private set; }
 
         public bool IsContentAvailable { get; private set; }
 
@@ -57,7 +57,7 @@ namespace dotAPNS
         /// <b>The value of this key must not exceed 64 bytes.</b>
         /// </summary>
         [CanBeNull]
-        public string CollapseId { get; private set; }
+        public string? CollapseId { get; private set; }
 
         /// <summary>
         /// User-defined properties that will be attached to the root payload dictionary.
@@ -393,19 +393,20 @@ namespace dotAPNS
 
     public class ApplePushAlert
     {
-        public string Title { get; }
-
-        public string Subtitle { get; }
-
+        [JsonPropertyName("title")]
+        public string? Title { get; }
+        [JsonPropertyName("subtitle")]
+        public string? Subtitle { get; }
+        [JsonPropertyName("body")]
         public string Body { get; }
 
-        public ApplePushAlert([CanBeNull] string title, [NotNull] string body)
+        public ApplePushAlert([CanBeNull] string? title, [NotNull] string body)
         {
             Title = title;
             Body = body ?? throw new ArgumentNullException(nameof(body));
         }
 
-        public ApplePushAlert([CanBeNull] string title, [CanBeNull] string subtitle, [NotNull] string body)
+        public ApplePushAlert([CanBeNull] string? title, [CanBeNull] string? subtitle, [NotNull] string body)
         {
             Title = title;
             Subtitle = subtitle;
@@ -413,23 +414,23 @@ namespace dotAPNS
         }
     }
 
-    [JsonObject(MemberSerialization.OptIn)]
+    
     public class ApplePushLocalizedAlert
     {
-        [JsonProperty("title-loc-key")]
-        public string TitleLocKey { get; }
+        [JsonPropertyName("title-loc-key")]
+        public string? TitleLocKey { get; }
 
-        [JsonProperty("title-loc-args")]
-        public string[] TitleLocArgs { get; }
+        [JsonPropertyName("title-loc-args")]
+        public string[]? TitleLocArgs { get; }
 
-        [JsonProperty("loc-key")]
-        public string LocKey { get; }
+        [JsonPropertyName("loc-key")]
+        public string? LocKey { get; }
 
-        [JsonProperty("loc-args")]
-        public string[] LocArgs { get; }
+        [JsonPropertyName("loc-args")]
+        public string[]? LocArgs { get; }
 
-        [JsonProperty("action-loc-key")]
-        public string ActionLocKey { get; }
+        [JsonPropertyName("action-loc-key")]
+        public string? ActionLocKey { get; }
 
         public ApplePushLocalizedAlert([NotNull] string locKey, [NotNull] string[] locArgs)
         {

@@ -326,7 +326,7 @@ namespace dotAPNS.Tests
                     return new HttpResponseMessage()
                     {
                         StatusCode = (HttpStatusCode) statusCode,
-                        Content = new JsonContent(responseContent)
+                        Content = JsonContent.Create(responseContent)
                     };
                 });
             }

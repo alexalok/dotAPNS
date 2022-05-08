@@ -15,9 +15,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-#if !NET46
+
+using System.Text.Json;
+using System.Net.Http.Json;
+#if !NET46 && !NET5_0_OR_GREATER
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
 #endif
@@ -92,13 +93,7 @@ namespace dotAPNS
             _useCert = true;
         }
 
-        ApnsClient([NotNull] HttpClient http, [NotNull]
-#if NET46 
-                   CngKey
-#else
-                   ECDsa
-#endif
-                   key, [NotNull] string keyId, [NotNull] string teamId, [NotNull] string bundleId)
+        ApnsClient([NotNull] HttpClient http, [NotNull] ECDsa key, [NotNull] string keyId, [NotNull] string teamId, [NotNull] string bundleId)
         {
             _http = http ?? throw new ArgumentNullException(nameof(http));
             _key = key ?? throw new ArgumentNullException(nameof(key));
@@ -150,7 +145,7 @@ namespace dotAPNS
             }
             if (!string.IsNullOrEmpty(push.CollapseId))
                 req.Headers.Add("apns-collapse-id", push.CollapseId);
-            req.Content = new JsonContent(payload);
+            req.Content = JsonContent.Create(payload, options: new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull});
 
             HttpResponseMessage resp;
             try
@@ -184,7 +179,11 @@ namespace dotAPNS
             ApnsErrorResponsePayload errorPayload;
             try
             {
+#if NET46
                 errorPayload = JsonConvert.DeserializeObject<ApnsErrorResponsePayload>(respContent);
+#else
+                errorPayload = JsonSerializer.Deserialize<ApnsErrorResponsePayload>(respContent);
+#endif
             }
             catch (JsonException ex)
             {
@@ -216,11 +215,14 @@ namespace dotAPNS
             {
                 throw new ArgumentException("Either certificate file path or certificate contents must be provided.", nameof(options));
             }
-
+#if !NET5_0_OR_GREATER
             certContent = certContent.Replace("\r", "").Replace("\n", "")
                 .Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "");
-
-#if !NET46
+#endif
+#if NET5_0_OR_GREATER
+            var key = ECDsa.Create(); //https://www.scottbrady91.com/c-sharp/pem-loading-in-dotnet-core-and-dotnet
+            key.ImportFromPem(certContent);
+#elif !NET46
             certContent = $"-----BEGIN PRIVATE KEY-----\n{certContent}\n-----END PRIVATE KEY-----";
             var ecPrivateKeyParameters = (ECPrivateKeyParameters)new PemReader(new StringReader(certContent)).ReadObject();
             // See https://github.com/dotnet/core/issues/2037#issuecomment-436340605 as to why we calculate q ourselves
@@ -246,7 +248,7 @@ namespace dotAPNS
             throw new NotSupportedException(
                 "Certificate-based connection is not supported on all .NET Framework versions and on .NET Core 2.x or lower. " +
                 "For more information, see: https://github.com/alexalok/dotAPNS/issues/6");
-#elif NETSTANDARD2_1
+#elif NETSTANDARD2_1 || NET5_0_OR_GREATER
             if (cert == null) throw new ArgumentNullException(nameof(cert));
 
             var handler = new HttpClientHandler();
@@ -326,8 +328,8 @@ namespace dotAPNS
                     return _jwt;
                 var now = DateTimeOffset.UtcNow;
 
-                string header = JsonConvert.SerializeObject((new { alg = "ES256", kid = _keyId }));
-                string payload = JsonConvert.SerializeObject(new { iss = _teamId, iat = now.ToUnixTimeSeconds() });
+                string header = JsonSerializer.Serialize((new { alg = "ES256", kid = _keyId }));
+                string payload = JsonSerializer.Serialize(new { iss = _teamId, iat = now.ToUnixTimeSeconds() });
 
                 string headerBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(header));
                 string payloadBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payload));

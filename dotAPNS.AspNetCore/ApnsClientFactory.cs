@@ -7,9 +7,9 @@ namespace dotAPNS.AspNetCore
 {
     public interface IApnsClientFactory
     {
-        IApnsClient CreateUsingCert(X509Certificate2 cert, bool useSandbox = false, bool disableServerCertValidation = false);
-        IApnsClient CreateUsingCert(string pathToCert, bool useSandbox = false, bool disableServerCertValidation = false);
-        IApnsClient CreateUsingJwt(ApnsJwtOptions options, bool useSandbox = false, bool disableServerCertValidation = false);
+        IApnsClient CreateUsingCert(X509Certificate2 cert, bool disableServerCertValidation = false);
+        IApnsClient CreateUsingCert(string pathToCert, bool disableServerCertValidation = false);
+        IApnsClient CreateUsingJwt(ApnsJwtOptions options, bool disableServerCertValidation = false);
     }
 
     public class ApnsClientFactory : IApnsClientFactory
@@ -21,28 +21,24 @@ namespace dotAPNS.AspNetCore
             _httpClientFactory = httpClientFactory;
         }
 
-        public IApnsClient CreateUsingCert(X509Certificate2 cert, bool useSandbox, bool disableServerCertValidation = false)
+        public IApnsClient CreateUsingCert(X509Certificate2 cert, bool disableServerCertValidation = false)
         {
             var client = disableServerCertValidation
                 ? CreateUsingCertWithNoServerCertValidation(cert)
                 : ApnsClient.CreateUsingCert(cert);
-            if (useSandbox)
-                client.UseSandbox();
             return client;
         }
 
-        public IApnsClient CreateUsingCert(string pathToCert, bool useSandbox = false, bool disableServerCertValidation = false)
+        public IApnsClient CreateUsingCert(string pathToCert, bool disableServerCertValidation = false)
         {
             var cert = new X509Certificate2(pathToCert);
-            return CreateUsingCert(cert, useSandbox, disableServerCertValidation);
+            return CreateUsingCert(cert, disableServerCertValidation);
         }
 
-        public IApnsClient CreateUsingJwt(ApnsJwtOptions options, bool useSandbox = false, bool disableServerCertValidation = false)
+        public IApnsClient CreateUsingJwt(ApnsJwtOptions options, bool disableServerCertValidation = false)
         {
             var httpClient = _httpClientFactory.CreateClient(disableServerCertValidation ? "dotAPNS_DisableCerverCertValidation" : "dotAPNS");
             var client = ApnsClient.CreateUsingJwt(httpClient, options);
-            if (useSandbox)
-                client.UseSandbox();
             return client;
         }
 

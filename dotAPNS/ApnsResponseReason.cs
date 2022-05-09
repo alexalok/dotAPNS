@@ -4,10 +4,14 @@
     {
         Unknown = - 1,
 
-        // 200
+        /// <summary>
+        /// 200
+        /// </summary>
         Success,
 
-        // 400
+        /// <summary>
+        /// 400
+        /// </summary>
         BadCollapseId,
         BadDeviceToken,
         BadExpirationDate,
@@ -23,7 +27,9 @@
         PayloadEmpty,
         TopicDisallowed,
 
-        // 403
+        /// <summary>
+        /// 403
+        /// </summary>
         BadCertificate,
         BadCertificateEnvironment,
         ExpiredProviderToken,
@@ -31,23 +37,35 @@
         InvalidProviderToken,
         MissingProviderToken,
 
-        // 404
+        /// <summary>
+        /// 404
+        /// </summary>
         BadPath,
 
-        // 405
+        /// <summary>
+        /// 405
+        /// </summary>
         MethodNotAllowed,
 
-        // 410
+        /// <summary>
+        /// 410
+        /// </summary>
         Unregistered,
 
-        // 413
+        /// <summary>
+        /// 413
+        /// </summary>
         PayloadTooLarge,
 
-        // 429
+        /// <summary>
+        /// 429
+        /// </summary>
         TooManyProviderTokenUpdates,
         TooManyRequests,
 
-        // 500
+        /// <summary>
+        /// 500
+        /// </summary>
         InternalServerError,
 
         // 503

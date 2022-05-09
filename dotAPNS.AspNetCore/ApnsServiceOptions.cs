@@ -7,5 +7,6 @@
         /// Potentially dangerous option that shouldn't be used in production.
         /// </summary>
         public bool DisableServerCertificateValidation { get; set; }
+        public ApnsJwtOptions? DefaultApnsJwtOptions { get; set; }
     }
 }

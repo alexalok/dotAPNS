@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using CommunityToolkit.Diagnostics;
 using Microsoft.Extensions.Options;
 
 namespace dotAPNS.AspNetCore
@@ -50,9 +51,9 @@ namespace dotAPNS.AspNetCore
 
 
         Task<ApnsResponse> SendPushAsync(ApplePush push, X509Certificate2 cert, bool useSandbox = false, CancellationToken cancellationToken = default);
-        Task<ApnsResponse> SendPushAsync(ApplePush push, ApnsJwtOptions jwtOptions, bool useSandbox = false, CancellationToken cancellationToken = default);
+        Task<ApnsResponse> SendPushAsync(ApplePush push, ApnsJwtOptions? jwtOptions = null, bool useSandbox = false, CancellationToken cancellationToken = default);
         Task<List<ApnsResponse>> SendPushesAsync(IReadOnlyCollection<ApplePush> pushes, X509Certificate2 cert, bool useSandbox = false, CancellationToken cancellationToken = default);
-        Task<List<ApnsResponse>> SendPushesAsync(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions jwtOptions, bool useSandbox = false, CancellationToken cancellationToken = default);
+        Task<List<ApnsResponse>> SendPushesAsync(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions? jwtOptions = null, bool useSandbox = false, CancellationToken cancellationToken = default);
     }
 
     public class ApnsService : IApnsService
@@ -95,8 +96,12 @@ namespace dotAPNS.AspNetCore
             }
         }
 
-        public Task<ApnsResponse> SendPushAsync(ApplePush push, ApnsJwtOptions jwtOptions, bool useSandbox = false, CancellationToken cancellationToken = default)
+        public Task<ApnsResponse> SendPushAsync(ApplePush push, ApnsJwtOptions? jwtOptions = null, bool useSandbox = false, CancellationToken cancellationToken = default)
         {
+            if (jwtOptions == null)
+            {
+                jwtOptions = _options.DefaultApnsJwtOptions ?? throw new ArgumentNullException(nameof(jwtOptions), "Cannot be null if no DefaultApnsJwtOptions are provided.");
+            }
             string clientCacheId = (useSandbox ? "s_" : "") + jwtOptions.BundleId;
             var client = _cachedJwtClients.GetOrAdd(clientCacheId, _ => 
                 _apnsClientFactory.CreateUsingJwt(jwtOptions, useSandbox, _options.DisableServerCertificateValidation));
@@ -134,8 +139,12 @@ namespace dotAPNS.AspNetCore
             }
         }
 
-        public async Task<List<ApnsResponse>> SendPushesAsync(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions jwtOptions, bool useSandbox = false, CancellationToken cancellationToken = default)
+        public async Task<List<ApnsResponse>> SendPushesAsync(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions? jwtOptions = null, bool useSandbox = false, CancellationToken cancellationToken = default)
         {
+            if(jwtOptions == null)
+            {
+                jwtOptions = _options.DefaultApnsJwtOptions ?? throw new ArgumentNullException(nameof(jwtOptions), "Cannot be null if no DefaultApnsJwtOptions are provided.");
+            }
             string clientCacheId = (useSandbox ? "s_" : "") + jwtOptions.BundleId;
             var client =  _cachedJwtClients.GetOrAdd(clientCacheId, _ => 
                 _apnsClientFactory.CreateUsingJwt(jwtOptions, useSandbox, _options.DisableServerCertificateValidation));

@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 
 using System.Text.Json;
 using System.Net.Http.Json;
+using CommunityToolkit.Diagnostics;
 #if !NET46 && !NET5_0_OR_GREATER
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
@@ -26,12 +27,17 @@ namespace dotAPNS
 {
     public interface IApnsClient
     {
+        /// <summary>
+        /// Use the async equivalent <see cref="SendAsync(ApplePush, CancellationToken)"/>
+        /// </summary>
+        /// <param name="push"></param>
+        /// <returns></returns>
         [Obsolete("Please use " + nameof(SendAsync) + " instead")]
         Task<ApnsResponse> Send(ApplePush push);
 
         /// <exception cref="HttpRequestException">Exception occured during connection to an APNs service.</exception>
         /// <exception cref="ApnsCertificateExpiredException">APNs certificate used to connect to an APNs service is expired and needs to be renewed.</exception>
-        Task<ApnsResponse> SendAsync(ApplePush push, CancellationToken ct=default);
+        Task<ApnsResponse> SendAsync(ApplePush push, CancellationToken cancellationToken=default);
     }
 
     public class ApnsClient : IApnsClient
@@ -109,7 +115,7 @@ namespace dotAPNS
             return SendAsync(push);
         }
 
-        public async Task<ApnsResponse> SendAsync(ApplePush push, CancellationToken ct=default)
+        public async Task<ApnsResponse> SendAsync(ApplePush push, CancellationToken cancellationToken=default)
         {
             if (_useCert)
             {
@@ -151,7 +157,7 @@ namespace dotAPNS
             HttpResponseMessage resp;
             try
             {
-                resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+                resp = await _http.SendAsync(req, cancellationToken).ConfigureAwait(false);
             }
             catch (HttpRequestException ex) when (
                 (Environment.OSVersion.Platform is PlatformID.Win32NT &&
@@ -174,25 +180,26 @@ namespace dotAPNS
             // check for payload 
             // {"reason":"DeviceTokenNotForTopic"}
             // {"reason":"Unregistered","timestamp":1454948015990}
-            var respContent = (await resp.Content.ReadFromJsonAsync<string>().ConfigureAwait(false))?.Trim('"');
+            var respContent = (await resp.Content.ReadFromJsonAsync<string>(cancellationToken: cancellationToken).ConfigureAwait(false))?.Trim('"');
             ApnsErrorResponsePayload? errorPayload;
             try
             {
+                if (respContent == null)
+                    throw new InvalidDataException("Response Content is null.");
 #if NET46
-                
                 errorPayload = JsonConvert.DeserializeObject<ApnsErrorResponsePayload>(respContent);
 #else
                 errorPayload = JsonSerializer.Deserialize<ApnsErrorResponsePayload>(respContent);
 #endif
             }
-            catch (JsonException ex)
+            catch (Exception ex) when(ex is JsonException || ex is InvalidDataException)
             {
                 return ApnsResponse.Error(ApnsResponseReason.Unknown, 
-                    $"Status: {statusCode}, reason: {await resp.Content.ReadAsStringAsync().ConfigureAwait(false) ?? "not specified"}.");
+                    $"Status: {statusCode}, reason: {respContent ?? "not specified"}.");
             }
 
             Debug.Assert(errorPayload != null);
-            return ApnsResponse.Error(errorPayload.Reason, errorPayload.ReasonRaw);
+            return ApnsResponse.Error(errorPayload?.Reason ?? ApnsResponseReason.Unknown, errorPayload?.ReasonRaw ?? "Empty content");
         }
 
         public static ApnsClient CreateUsingJwt(HttpClient http, ApnsJwtOptions options)
@@ -304,7 +311,6 @@ namespace dotAPNS
                 case ApplePushType.Background:
                 case ApplePushType.Alert:
                     return _bundleId;
-                    break;
                 case ApplePushType.Voip:
                     return _bundleId + ".voip";
                 case ApplePushType.Location:
@@ -323,9 +329,13 @@ namespace dotAPNS
             }
 
             string GetOrGenerateJwtInternal()
-            {
+            {                
                 if (_lastJwtGenerationTime > DateTime.UtcNow - TimeSpan.FromMinutes(20)) // refresh no more than once every 20 minutes
+                {
+                    Guard.IsNotNull(_jwt, nameof(_jwt));
                     return _jwt;
+                } 
+                    
                 var now = DateTimeOffset.UtcNow;
 
                 string header = JsonSerializer.Serialize((new { alg = "ES256", kid = _keyId }));
@@ -343,6 +353,7 @@ namespace dotAPNS
                     signature = dsa.SignData(Encoding.UTF8.GetBytes(unsignedJwtData));
                 }
 #else
+                Guard.IsNotNull(_key, nameof(_key));
                 signature = _key.SignData(Encoding.UTF8.GetBytes(unsignedJwtData), HashAlgorithmName.SHA256);
 #endif
                 _jwt = $"{unsignedJwtData}.{Convert.ToBase64String(signature)}";

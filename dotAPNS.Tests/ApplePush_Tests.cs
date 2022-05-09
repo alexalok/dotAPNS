@@ -270,8 +270,8 @@ namespace dotAPNS.Tests
                 .AddAlert("body")
                 .SendToDevelopmentServer();
 
-            Assert.IsFalse(prodPush.IsSendToDevelopmentServer);
-            Assert.IsTrue(devPush.IsSendToDevelopmentServer);
+            Assert.IsFalse(prodPush.IsSandbox);
+            Assert.IsTrue(devPush.IsSandbox);
         }
         [TestMethod]
         public void AddTokens_Adds_Tokens()

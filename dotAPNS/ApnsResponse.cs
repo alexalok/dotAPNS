@@ -3,10 +3,10 @@
     public class ApnsResponse
     {
         public ApnsResponseReason Reason { get; }
-        public string ReasonString { get; }
+        public string? ReasonString { get; }
         public bool IsSuccessful { get; }
 
-        ApnsResponse(ApnsResponseReason reason, string reasonString, bool isSuccessful)
+        ApnsResponse(ApnsResponseReason reason, string? reasonString, bool isSuccessful)
         {
             Reason = reason;
             ReasonString = reasonString;

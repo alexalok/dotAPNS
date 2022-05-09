@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	  <TargetFrameworks>netstandard2.1;net5.0;net6.0</TargetFrameworks>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+
+  </PropertyGroup>
+  <PropertyGroup Condition="$(TargetFramework) != 'netstandard2.0'">
+	  <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(TargetFramework) == 'netstandard2.0'">
+	  <Nullable>Disable</Nullable>
+	</PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="6.0.3" />
+  </ItemGroup>
+
+</Project>

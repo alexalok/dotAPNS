@@ -18,6 +18,9 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using System.Net.Http.Json;
 using CommunityToolkit.Diagnostics;
+using dotAPNS.Core.Contracts;
+using dotAPNS.Core.Models;
+using System.Collections.Concurrent;
 #if !NET46 && !NET5_0_OR_GREATER
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
@@ -38,6 +41,13 @@ namespace dotAPNS
         /// <exception cref="HttpRequestException">Exception occured during connection to an APNs service.</exception>
         /// <exception cref="ApnsCertificateExpiredException">APNs certificate used to connect to an APNs service is expired and needs to be renewed.</exception>
         Task<ApnsResponse> SendAsync(ApplePush push, CancellationToken cancellationToken=default);
+        /// <summary>
+        /// Sends a batched apple push. Make sure you have called AsBatched.
+        /// </summary>
+        /// <param name="push"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        Task<IEnumerable<ApnsResponse>> SendBatchAsync(ApplePush push, CancellationToken cancellationToken = default);
     }
 
     public class ApnsClient : IApnsClient
@@ -114,9 +124,10 @@ namespace dotAPNS
         {
             return SendAsync(push);
         }
-
+        ///<inheritdoc/>
         public async Task<ApnsResponse> SendAsync(ApplePush push, CancellationToken cancellationToken=default)
         {
+            Guard.IsFalse(push.IsBatched, "IsBatched", "Must be used only with single non-batched push notifications. Use SendBatchAsync if you want to send a batch.");
             if (_useCert)
             {
                 if (_isVoipCert && push.Type != ApplePushType.Voip)
@@ -124,22 +135,64 @@ namespace dotAPNS
             }
 
             var payload = push.GeneratePayload();
+            var content = JsonContent.Create(payload, options: new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
+            return await SendSingleAsyncInternal(push, content, cancellationToken).ConfigureAwait(false);           
+        }
+        ///<inheritdoc/>
+        public async Task<IEnumerable<ApnsResponse>> SendBatchAsync(ApplePush push, CancellationToken cancellationToken = default)
+        {
+            Guard.IsTrue(push.IsBatched, "IsBatched", "Must be used only with batched push notifications. Use SendAsync if you want to send a single push.");
+            if (_useCert)
+            {
+                if (_isVoipCert && push.Type != ApplePushType.Voip)
+                    throw new InvalidOperationException("Provided certificate can only be used to send 'voip' type pushes.");
+            }
 
-            string url = (_useSandbox || push.IsSendToDevelopmentServer ? DevelopmentEndpoint :  ProductionEndpoint)
+            var content = JsonContent.Create(push.GeneratePayload(), options: new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
+
+#if NET6_0_OR_GREATER
+            var responses = new ConcurrentBag<ApnsResponse>();
+            await Parallel.ForEachAsync(push.Tokens, cancellationToken, async (token, ct) =>
+            {
+                responses.Add(await SendToTokenAsyncInternal(push, token, content, ct).ConfigureAwait(false));
+            }).ConfigureAwait(false);
+            return responses;
+#else
+            var tasks = new List<Task<ApnsResponse>>();
+            foreach(var token in push.Tokens)
+            {
+                tasks.Add(SendToTokenAsyncInternal(push, token, content, cancellationToken));
+            }
+            return await Task.WhenAll(tasks).ConfigureAwait(false);
+#endif
+        }
+
+
+        private async Task<ApnsResponse> SendSingleAsyncInternal(ApplePush push, HttpContent content, CancellationToken cancellationToken = default)
+        {
+            Guard.IsFalse(push.IsBatched, "IsBatched", "Must be used only with single non-batched push notifications");
+            var token = new Token(push.Token ?? push.VoipToken, push.Type, push.IsSendToDevelopmentServer);
+            return await SendToTokenAsyncInternal(push, token, content, cancellationToken).ConfigureAwait(false);
+        }
+
+
+        private async Task<ApnsResponse> SendToTokenAsyncInternal(ApplePush push, IToken token, HttpContent content, CancellationToken cancellationToken = default)
+        {
+            string url = (_useSandbox || token.IsSandbox ? DevelopmentEndpoint : ProductionEndpoint)
                 + (_useBackupPort ? ":2197" : ":443")
                 + "/3/device/"
-                + (push.Token ?? push.VoipToken);
+                + (token.Value ?? throw new ArgumentNullException(token.Value, "Make sure the value of the IToken instance is not null"));
             var req = new HttpRequestMessage(HttpMethod.Post, url);
 #if NET5_0_OR_GREATER
             req.Version = HttpVersion.Version20;
             req.VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
 #endif
 #if NETSTANDARD2_0 || NETSTANDARD2_1
-            req.Version = new Version(2, 0);            
+            req.Version = new Version(2, 0);
 #endif
             req.Headers.Add("apns-priority", push.Priority.ToString());
-            req.Headers.Add("apns-push-type", push.Type.ToString().ToLowerInvariant());
-            req.Headers.Add("apns-topic", GetTopic(push.Type));
+            req.Headers.Add("apns-push-type", token.Type.ToString().ToLowerInvariant());
+            req.Headers.Add("apns-topic", GetTopic(token.Type));
             if (!_useCert)
                 req.Headers.Authorization = new AuthenticationHeaderValue("bearer", GetOrGenerateJwt());
             if (push.Expiration.HasValue)
@@ -152,7 +205,7 @@ namespace dotAPNS
             }
             if (!string.IsNullOrEmpty(push.CollapseId))
                 req.Headers.Add("apns-collapse-id", push.CollapseId);
-            req.Content = JsonContent.Create(payload, options: new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping});
+            req.Content = content;
 
             HttpResponseMessage resp;
             try
@@ -167,20 +220,22 @@ namespace dotAPNS
             {
                 throw new ApnsCertificateExpiredException(innerException: ex);
             }
-
-            // Process status codes specified by APNs documentation
-            // https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/handling_notification_responses_from_apns
-            var statusCode = (int)resp.StatusCode;
-
-            // Push has been successfully sent. This is the only code indicating a success as per documentation.
-            if (statusCode == 200)
+            if (resp.StatusCode == HttpStatusCode.OK)
                 return ApnsResponse.Successful();
+            return await HandleErrorAsync(resp, cancellationToken).ConfigureAwait(false);
+        }
 
+        private async Task<ApnsResponse> HandleErrorAsync(HttpResponseMessage responseMessage, CancellationToken cancellationToken = default)
+        {
             // something went wrong
             // check for payload 
             // {"reason":"DeviceTokenNotForTopic"}
             // {"reason":"Unregistered","timestamp":1454948015990}
-            var respContent = (await resp.Content.ReadFromJsonAsync<string>(cancellationToken: cancellationToken).ConfigureAwait(false))?.Trim('"');
+
+            // Process status codes specified by APNs documentation
+            // https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/handling_notification_responses_from_apns
+
+            var respContent = (await responseMessage.Content.ReadFromJsonAsync<string>(cancellationToken: cancellationToken).ConfigureAwait(false))?.Trim('"');
             ApnsErrorResponsePayload? errorPayload;
             try
             {
@@ -192,10 +247,10 @@ namespace dotAPNS
                 errorPayload = JsonSerializer.Deserialize<ApnsErrorResponsePayload>(respContent);
 #endif
             }
-            catch (Exception ex) when(ex is JsonException || ex is InvalidDataException)
+            catch (Exception ex) when (ex is JsonException || ex is InvalidDataException)
             {
-                return ApnsResponse.Error(ApnsResponseReason.Unknown, 
-                    $"Status: {statusCode}, reason: {respContent ?? "not specified"}.");
+                return ApnsResponse.Error(ApnsResponseReason.Unknown,
+                    $"Status: {responseMessage.StatusCode}, reason: {respContent ?? "not specified"}.");
             }
 
             Debug.Assert(errorPayload != null);
@@ -277,7 +332,7 @@ namespace dotAPNS
             return apns;
         }
 
-        public static ApnsClient CreateUsingCert(string pathToCert, string certPassword = null)
+        public static ApnsClient CreateUsingCert(string pathToCert, string? certPassword = null)
         {
             if (string.IsNullOrWhiteSpace(pathToCert))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(pathToCert));

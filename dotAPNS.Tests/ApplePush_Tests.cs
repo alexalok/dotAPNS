@@ -29,6 +29,21 @@ namespace dotAPNS.Tests
         }
 
         [TestMethod]
+        public void Adding_Token_Multiple_Times_Fails_WithoutBatch_Succeeds_With_Batched()
+        {
+            var push1 = new ApplePush(ApplePushType.Alert);
+            var push2 = new ApplePush(ApplePushType.Alert).AsBatched();
+            
+            push1.AddToken("token1");
+            
+            Assert.ThrowsException<InvalidOperationException>(() => push1.AddToken("token2"));
+            push2.AddToken("token2");
+        }
+
+
+
+
+        [TestMethod]
         public void Ensure_Type_Correspond_To_Payload()
         {
             var pushWithContentAvailable = ApplePush.CreateContentAvailable();
@@ -257,6 +272,18 @@ namespace dotAPNS.Tests
 
             Assert.IsFalse(prodPush.IsSendToDevelopmentServer);
             Assert.IsTrue(devPush.IsSendToDevelopmentServer);
+        }
+        [TestMethod]
+        public void AddTokens_Adds_Tokens()
+        {
+            var push = new ApplePush(ApplePushType.Alert).AsBatched();
+            var tokens = new string[]
+            {
+                "token1",
+                "token2"
+            };
+            push.AddTokens(tokens);
+            Assert.AreEqual(push.Tokens.Count, 2);
         }
     }
 }

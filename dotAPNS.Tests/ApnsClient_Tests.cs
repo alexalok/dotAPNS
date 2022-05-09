@@ -14,7 +14,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using ExpectedObjects;
+using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
@@ -48,7 +48,7 @@ namespace dotAPNS.Tests
         [TestMethod]
         public void Creating_Client_With_Cert_Not_Fails_Only_On_NetCore3_0()
         {
-#if !NETCOREAPP3_1
+#if NETCOREAPP3_0
             Assert.ThrowsException<NotSupportedException>(() => ApnsClient.CreateUsingCert(_certs.P12Cert));
 #else
             ApnsClient.CreateUsingCert(_certs.P12Cert);
@@ -84,7 +84,7 @@ namespace dotAPNS.Tests
             var push = CreateStubPush();
             var resp = await apns.SendAsync(push);
 
-            expectedResponse.ToExpectedObject().ShouldEqual(resp);
+            expectedResponse.Should().BeEquivalentTo(resp);
         }
 
         [TestMethod]

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using ExpectedObjects;
+using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace dotAPNS.Tests
@@ -10,11 +10,11 @@ namespace dotAPNS.Tests
     public class ApnsErrorResponsePayload_Tests
     {
         [DataTestMethod]
-        [DynamicData(nameof(Payloads))]
+        [DynamicData(nameof(Payloads), DynamicDataSourceType.Property)]
         public void Ensure_Parses_Correctly(string json, ApnsErrorResponsePayload expectedPayload)
         {
             var parsedPayload = JsonSerializer.Deserialize<ApnsErrorResponsePayload>(json);
-            expectedPayload.ToExpectedObject().ShouldEqual(parsedPayload);
+            expectedPayload.Should().BeEquivalentTo(parsedPayload);
         }
 
         /*

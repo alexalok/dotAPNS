@@ -124,7 +124,13 @@ namespace dotAPNS
                 + "/3/device/"
                 + (push.Token ?? push.VoipToken);
             var req = new HttpRequestMessage(HttpMethod.Post, url);
-            req.Version = new Version(2, 0);
+#if NET5_0_OR_GREATER
+            req.Version = HttpVersion.Version20;
+            req.VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+#endif
+#if NETSTANDARD2_0 || NETSTANDARD2_1
+            req.Version = new Version(2, 0);            
+#endif
             req.Headers.Add("apns-priority", push.Priority.ToString());
             req.Headers.Add("apns-push-type", push.Type.ToString().ToLowerInvariant());
             req.Headers.Add("apns-topic", GetTopic(push.Type));
@@ -140,7 +146,7 @@ namespace dotAPNS
             }
             if (!string.IsNullOrEmpty(push.CollapseId))
                 req.Headers.Add("apns-collapse-id", push.CollapseId);
-            req.Content = JsonContent.Create(payload, options: new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull});
+            req.Content = JsonContent.Create(payload, options: new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping});
 
             HttpResponseMessage resp;
             try
@@ -156,8 +162,6 @@ namespace dotAPNS
                 throw new ApnsCertificateExpiredException(innerException: ex);
             }
 
-            var respContent = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-
             // Process status codes specified by APNs documentation
             // https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/handling_notification_responses_from_apns
             var statusCode = (int)resp.StatusCode;
@@ -170,11 +174,12 @@ namespace dotAPNS
             // check for payload 
             // {"reason":"DeviceTokenNotForTopic"}
             // {"reason":"Unregistered","timestamp":1454948015990}
-
-            ApnsErrorResponsePayload errorPayload;
+            var respContent = (await resp.Content.ReadFromJsonAsync<string>().ConfigureAwait(false))?.Trim('"');
+            ApnsErrorResponsePayload? errorPayload;
             try
             {
 #if NET46
+                
                 errorPayload = JsonConvert.DeserializeObject<ApnsErrorResponsePayload>(respContent);
 #else
                 errorPayload = JsonSerializer.Deserialize<ApnsErrorResponsePayload>(respContent);
@@ -183,7 +188,7 @@ namespace dotAPNS
             catch (JsonException ex)
             {
                 return ApnsResponse.Error(ApnsResponseReason.Unknown, 
-                    $"Status: {statusCode}, reason: {respContent ?? "not specified"}.");
+                    $"Status: {statusCode}, reason: {await resp.Content.ReadAsStringAsync().ConfigureAwait(false) ?? "not specified"}.");
             }
 
             Debug.Assert(errorPayload != null);

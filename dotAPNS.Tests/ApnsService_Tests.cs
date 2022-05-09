@@ -55,7 +55,7 @@ namespace dotAPNS.Tests
             await service.SendPush(thirdPush, jwtOpt2);
             await service.SendPush(fourthPush, jwtOpt2);
 
-            Assert.Equals(2, ((IDictionary)service.GetType().GetField("_cachedJwtClients", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service)).Count);
+            Assert.AreEqual(2, ((IDictionary)service.GetType().GetField("_cachedJwtClients", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service)).Count);
         }
 
         //[TestMethod] cert uses real handler. Can't test until refactored.

@@ -78,7 +78,7 @@ namespace dotAPNS
         /// </summary>
         bool _sendAlertAsText;
 
-        internal bool IsSendToDevelopmentServer {get; private set; }
+        public bool IsSandbox {get; private set; }
 
         public ApplePush(ApplePushType pushType)
         {
@@ -277,7 +277,7 @@ namespace dotAPNS
                 throw new InvalidOperationException(
                     $"Please use AddVoipToken() when sending {nameof(ApplePushType.Voip)} pushes.");
             if(IsBatched)
-                Tokens.Add(new Token(token, Type, IsSendToDevelopmentServer));
+                Tokens.Add(new Token(token, Type, IsSandbox));
             else
                 Token = token;
             return this;
@@ -318,7 +318,7 @@ namespace dotAPNS
                 throw new InvalidOperationException(
                     $"VoIP token may only be used with {nameof(ApplePushType.Voip)} pushes.");
             if(IsBatched)
-                Tokens.Add(new Token(voipToken, Type, IsSendToDevelopmentServer));
+                Tokens.Add(new Token(voipToken, Type, IsSandbox));
             else
                 VoipToken = voipToken;
             return this;
@@ -330,7 +330,7 @@ namespace dotAPNS
             Guard.IsNotEmpty(tokens, nameof(tokens));
             foreach(var token in tokens)
             {
-                Tokens.Add(new Token(token, Type, IsSendToDevelopmentServer));
+                Tokens.Add(new Token(token, Type, IsSandbox));
             }
             return this;
         }
@@ -388,7 +388,7 @@ namespace dotAPNS
         /// <returns></returns>
         public ApplePush SendToDevelopmentServer()
         {
-            IsSendToDevelopmentServer = true;
+            IsSandbox = true;
             return this;
         }
 

@@ -4,7 +4,6 @@
     <TargetFrameworks>netstandard2.0;netstandard2.1;net5.0;net6.0</TargetFrameworks>
     <Authors>alexalok</Authors>
     <Description>dotAPNS is a library used to send push notifications to Apple devices using Apple Push Notification service.</Description>
-    <Version>4.2.0</Version>
     <Copyright>© alexalok 2019-2022</Copyright>
     <PackageReleaseNotes>
       * Add support for Location Push (https://developer.apple.com/documentation/corelocation/cllocationmanager/creating_a_location_push_service_extension)

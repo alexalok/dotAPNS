@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -138,12 +139,25 @@ namespace dotAPNS.AspNetCore
             string clientCacheId = (useSandbox ? "s_" : "") + jwtOptions.BundleId;
             var client =  _cachedJwtClients.GetOrAdd(clientCacheId, _ => 
                 _apnsClientFactory.CreateUsingJwt(jwtOptions, useSandbox, _options.DisableServerCertificateValidation));
-            var result = new List<ApnsResponse>(pushes.Count);
+            
             try
             {
-                foreach (var push in pushes)
-                    result.Add(await client.SendAsync(push, cancellationToken));
-                return result;
+#if NET6_0_OR_GREATER
+                var results = new ConcurrentBag<ApnsResponse>();
+                var concurrent = new ConcurrentBag<ApplePush>(pushes);
+                await Parallel.ForEachAsync(concurrent, cancellationToken, async (push, token) => 
+                {
+                    results.Add(await client.SendAsync(push, token).ConfigureAwait(false));
+                });
+#else
+                var tasks = new List<Task<ApnsResponse>>();
+                foreach(var push in pushes)
+                {
+                    tasks.Add(client.SendAsync(push, cancellationToken));
+                }
+                var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+#endif
+                return results.ToList();
             }
             catch
             {

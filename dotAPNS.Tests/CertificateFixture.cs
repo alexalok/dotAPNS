@@ -1,12 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
-using Xunit;
 
 namespace dotAPNS.Tests
 {
@@ -51,8 +49,8 @@ namespace dotAPNS.Tests
         }
     }
 
-    [CollectionDefinition("certs")]
-    public class CertificateDataCollection : ICollectionFixture<CertificateFixture>
-    {
-    }
+    //[CollectionDefinition("certs")]
+    //public class CertificateDataCollection : ICollectionFixture<CertificateFixture>
+    //{
+    //}
 }

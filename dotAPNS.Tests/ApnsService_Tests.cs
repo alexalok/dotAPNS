@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -9,23 +10,24 @@ using System.Threading;
 using System.Threading.Tasks;
 using dotAPNS.AspNetCore;
 using Microsoft.Extensions.Options;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
-using Xunit;
 
 namespace dotAPNS.Tests
 {
-    [Collection("certs")]
+    [TestCategory("certs")]
+    [TestClass]
     public class ApnsService_Tests
     {
         readonly CertificateFixture _certs;
 
-        public ApnsService_Tests(CertificateFixture certs)
+        public ApnsService_Tests()
         {
-            _certs = certs;
+            _certs = new CertificateFixture();
         }
 
-        [Fact]
+        [TestMethod]
         public async Task Ensure_Client_Caching_Works_With_Jwt()
         {
             var service = BoostrapApnsService();
@@ -53,10 +55,10 @@ namespace dotAPNS.Tests
             await service.SendPush(thirdPush, jwtOpt2);
             await service.SendPush(fourthPush, jwtOpt2);
 
-            Assert.Equal(2, ((IDictionary)service.GetType().GetField("_cachedJwtClients", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service)).Count);
+            Assert.Equals(2, ((IDictionary)service.GetType().GetField("_cachedJwtClients", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service)).Count);
         }
 
-        //[Fact] cert uses real handler. Can't test until refactored.
+        //[TestMethod] cert uses real handler. Can't test until refactored.
         public async Task Ensure_Client_Caching_Works_With_Cert()
         {
             var service = BoostrapApnsService();
@@ -66,7 +68,7 @@ namespace dotAPNS.Tests
             await service.SendPush(firstPush, _certs.P12Cert);
             await service.SendPush(secondPush, _certs.P12Cert);
 
-            Assert.Single((IDictionary)service.GetType().GetField("_cachedJwtClients", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service));
+            Assert.IsTrue(((IDictionary)service.GetType().GetField("_cachedJwtClients", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service)).Count == 1);
         }
 
 
@@ -79,7 +81,7 @@ namespace dotAPNS.Tests
                 .ReturnsAsync(new HttpResponseMessage()
                 {
                     StatusCode = HttpStatusCode.OK,
-                    Content = new JsonContent("{}")
+                    Content = JsonContent.Create("{}")
                 });
             httpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient(httpHandler.Object));
             var apnsClientFactory = new ApnsClientFactory(httpClientFactory.Object);

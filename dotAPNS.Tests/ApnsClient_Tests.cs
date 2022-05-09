@@ -15,26 +15,25 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using ExpectedObjects;
-using JetBrains.Annotations;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
-using Newtonsoft.Json.Bson;
 using Nito.AsyncEx;
-using Xunit;
 
 namespace dotAPNS.Tests
 {
-    [Collection("certs")]
+    [TestCategory("certs")]
+    [TestClass]
     public class ApnsClient_Tests
     {
         readonly CertificateFixture _certs;
 
-        public ApnsClient_Tests(CertificateFixture certs)
+        public ApnsClient_Tests()
         {
-            _certs = certs;
+            _certs = new CertificateFixture();
         }
 
-        [Fact]
+        [TestMethod]
         public void Sending_NonVoip_Type_With_Voip_Cert_Fails()
         {
 #if !NETCOREAPP3_1
@@ -43,20 +42,20 @@ namespace dotAPNS.Tests
             var apns = ApnsClient.CreateUsingCert(_certs.P12Cert);
             var push = ApplePush.CreateAlert(new ApplePushAlert("title", "body")).AddToken("token");
 
-            Assert.ThrowsAsync<InvalidOperationException>(async () => await apns.SendAsync(push));
+            Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => await apns.SendAsync(push));
         }
 
-        [Fact]
+        [TestMethod]
         public void Creating_Client_With_Cert_Not_Fails_Only_On_NetCore3_0()
         {
 #if !NETCOREAPP3_1
-            Assert.Throws<NotSupportedException>(() => ApnsClient.CreateUsingCert(_certs.P12Cert));
+            Assert.ThrowsException<NotSupportedException>(() => ApnsClient.CreateUsingCert(_certs.P12Cert));
 #else
             ApnsClient.CreateUsingCert(_certs.P12Cert);
 #endif
         }
 
-        [Fact]
+        [TestMethod]
         public async Task Sending_Push_Not_Throws()
         {
             var (client, _) = BoostrapApnsClient();
@@ -64,7 +63,7 @@ namespace dotAPNS.Tests
             await client.SendAsync(push);
         }
 
-        [Fact]
+        [TestMethod]
         public void CreateUsingJwt_Using_Cert_Path_Succeeds()
         {
             var jwtOpt = new ApnsJwtOptions()
@@ -77,8 +76,8 @@ namespace dotAPNS.Tests
             var client = ApnsClient.CreateUsingJwt(new HttpClient(), jwtOpt);
         }
 
-        [Theory]
-        [MemberData(nameof(Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data))]
+        [DataTestMethod]
+        [DynamicData(nameof(Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data))]
         public async Task Ensure_Error_When_Sending_Push_Is_Correctly_Handled(int statusCode, string payload, ApnsResponse expectedResponse)
         {
             var (apns, _) = BoostrapApnsClient(statusCode, payload);
@@ -88,8 +87,8 @@ namespace dotAPNS.Tests
             expectedResponse.ToExpectedObject().ShouldEqual(resp);
         }
 
-        [Fact]
-        public void Ensure_Push_Expiration_Setting_Is_Respected()
+        [TestMethod]
+        public async Task Ensure_Push_Expiration_Setting_Is_Respected()
         {
             var now = DateTimeOffset.UtcNow;
             long unixNow = now.ToUnixTimeSeconds();
@@ -97,7 +96,7 @@ namespace dotAPNS.Tests
             var push = CreateStubPush();
             push.AddExpiration(now);
 
-            apns.SendAsync(push);
+            await apns.SendAsync(push);
 
             httpHandlerMock
                 .Protected()
@@ -109,14 +108,14 @@ namespace dotAPNS.Tests
                 );
         }
 
-        [Fact]
-        public void Ensure_Push_Immediate_Expiration_Setting_Is_Respected()
+        [TestMethod]
+        public async Task Ensure_Push_Immediate_Expiration_Setting_Is_Respected()
         {
             var (apns, httpHandlerMock) = BoostrapApnsClient();
             var push = CreateStubPush();
             push.AddImmediateExpiration();
 
-            apns.SendAsync(push);
+            await apns.SendAsync(push);
 
             httpHandlerMock
                 .Protected()
@@ -128,7 +127,7 @@ namespace dotAPNS.Tests
                 );
         }
 
-        [Fact]
+        [TestMethod]
         public async Task Ensure_Send_Does_Not_Deadlock_When_Sync_Waiting_On_Result_With_Sync_Context()
         {
             var (apns, httpHandlerMock) = BoostrapApnsClient();
@@ -148,11 +147,11 @@ namespace dotAPNS.Tests
                 throw new Exception("Code has deadlocked.");
         }
 
-        [Theory]
-        [InlineData(true, true, "2197")]
-        [InlineData(true, false, "2197")]
-        [InlineData(false, true, "")]
-        [InlineData(false, false, "")]
+        [DataTestMethod]
+        [DataRow(true, true, "2197")]
+        [DataRow(true, false, "2197")]
+        [DataRow(false, true, "")]
+        [DataRow(false, false, "")]
         public async Task SendAsync_Uses_Correct_Port(bool useBackupPort, bool useSandbox, string expectedPort)
         {
             var (apns, httpHandlerMock) = BoostrapApnsClient();
@@ -175,11 +174,11 @@ namespace dotAPNS.Tests
                     ItExpr.IsAny<CancellationToken>());
         }
 
-        [Theory]
-        [InlineData(false, false, ApnsClient.ProductionEndpoint)]
-        [InlineData(false, true, ApnsClient.DevelopmentEndpoint)]
-        [InlineData(true, false, ApnsClient.DevelopmentEndpoint)] 
-        [InlineData(true, true, ApnsClient.DevelopmentEndpoint)]
+        [DataTestMethod]
+        [DataRow(false, false, ApnsClient.ProductionEndpoint)]
+        [DataRow(false, true, ApnsClient.DevelopmentEndpoint)]
+        [DataRow(true, false, ApnsClient.DevelopmentEndpoint)] 
+        [DataRow(true, true, ApnsClient.DevelopmentEndpoint)]
         public async Task SendAsync_Should_Use_Correct_Environment_Server(bool isClientDevelopment, bool isPushDevelopment, 
             string expectedUrl)
         {
@@ -205,12 +204,12 @@ namespace dotAPNS.Tests
                     ItExpr.IsAny<CancellationToken>());
         }
 
-        [Fact]
+        [TestMethod]
         public Task SendAsync_Throws_When_Canceled()
         {
             var (apns, httpHandlerMock) = BoostrapApnsClient(delay:TimeSpan.FromSeconds(10));
             var push = CreateStubPush();
-            return Assert.ThrowsAsync<TaskCanceledException>(async () =>
+            return Assert.ThrowsExceptionAsync<TaskCanceledException>(async () =>
             {
                 var cts = new CancellationTokenSource();
                 Task sendTask = apns.SendAsync(push, cts.Token);
@@ -220,7 +219,7 @@ namespace dotAPNS.Tests
             });
         }
 
-        [Fact]
+        [TestMethod]
         public async Task Adding_Collapse_Id_Sets_Header()
         {
             var (apns, httpHandlerMock) = BoostrapApnsClient();
@@ -239,7 +238,7 @@ namespace dotAPNS.Tests
                 );
         }
 
-        [Fact]
+        [TestMethod]
         public async Task No_Collapse_Id_Header_If_Collapse_Id_Is_Not_Added()
         {
             var (apns, httpHandlerMock) = BoostrapApnsClient();
@@ -257,35 +256,41 @@ namespace dotAPNS.Tests
                 );
         }
 
-        [FactOnlyFor(PlatformID.Win32NT)]
+        [TestMethod]
         public async Task Ensure_SendAsync_Throws_On_Expired_Certificate_On_Windows()
         {
-            // Arrange
-            var ex = new HttpRequestException(null,
-                new AuthenticationException(null,
-                    new Win32Exception(- 2146893016)));
-            var (apns, httpHandlerMock) = BoostrapApnsClient(throwOnResponse: ex);
-            var push = CreateStubPush();
+            if(OperatingSystem.IsWindows())
+            {
+                // Arrange
+                var ex = new HttpRequestException(null,
+                    new AuthenticationException(null,
+                        new Win32Exception(-2146893016)));
+                var (apns, httpHandlerMock) = BoostrapApnsClient(throwOnResponse: ex);
+                var push = CreateStubPush();
 
-            // Act and Assert
-            await Assert.ThrowsAsync<ApnsCertificateExpiredException>(() => apns.SendAsync(push));
+                // Act and Assert
+                await Assert.ThrowsExceptionAsync<ApnsCertificateExpiredException>(() => apns.SendAsync(push));
+            }
         }
 
-        [FactOnlyFor(PlatformID.Unix)]
+        [TestMethod]
         public async Task Ensure_SendAsync_Throws_On_Expired_Certificate_On_Linux()
         {
-            // Arrange
-            var ex = new HttpRequestException(null,
-                new IOException(null,
+            if (OperatingSystem.IsLinux())
+            {
+                // Arrange
+                var ex = new HttpRequestException(null,
                     new IOException(null,
                         new IOException(null,
-                            new Exception(null,
-                                new ExternalException(null, 336151573))))));
-            var (apns, httpHandlerMock) = BoostrapApnsClient(throwOnResponse: ex);
-            var push = CreateStubPush();
+                            new IOException(null,
+                                new Exception(null,
+                                    new ExternalException(null, 336151573))))));
+                var (apns, httpHandlerMock) = BoostrapApnsClient(throwOnResponse: ex);
+                var push = CreateStubPush();
 
-            // Act and Assert
-            await Assert.ThrowsAsync<ApnsCertificateExpiredException>(() => apns.SendAsync(push));
+                // Act and Assert
+                await Assert.ThrowsExceptionAsync<ApnsCertificateExpiredException>(() => apns.SendAsync(push));
+            }
         }
 
         public static IEnumerable<object[]> Ensure_Error_When_Sending_Push_Is_Correctly_Handled_Data => new[]
@@ -304,7 +309,7 @@ namespace dotAPNS.Tests
             }
         };
 
-        (ApnsClient apns, Mock<HttpMessageHandler> httpHandlerMock) BoostrapApnsClient(int statusCode = 200, string responseContent = "{}", TimeSpan delay=default, [CanBeNull] Exception throwOnResponse = null)
+        (ApnsClient apns, Mock<HttpMessageHandler> httpHandlerMock) BoostrapApnsClient(int statusCode = 200, string responseContent = "{}", TimeSpan delay=default, Exception? throwOnResponse = null)
         {
             if(delay==default) delay = TimeSpan.FromMilliseconds(1);
             var httpHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);

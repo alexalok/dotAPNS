@@ -2,15 +2,14 @@
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using JetBrains.Annotations;
 
 namespace dotAPNS.AspNetCore
 {
     public interface IApnsClientFactory
     {
-        IApnsClient CreateUsingCert([NotNull] X509Certificate2 cert, bool useSandbox = false, bool disableServerCertValidation = false);
-        IApnsClient CreateUsingCert([NotNull] string pathToCert, bool useSandbox = false, bool disableServerCertValidation = false);
-        IApnsClient CreateUsingJwt([NotNull] ApnsJwtOptions options, bool useSandbox = false, bool disableServerCertValidation = false);
+        IApnsClient CreateUsingCert(X509Certificate2 cert, bool useSandbox = false, bool disableServerCertValidation = false);
+        IApnsClient CreateUsingCert(string pathToCert, bool useSandbox = false, bool disableServerCertValidation = false);
+        IApnsClient CreateUsingJwt(ApnsJwtOptions options, bool useSandbox = false, bool disableServerCertValidation = false);
     }
 
     public class ApnsClientFactory : IApnsClientFactory

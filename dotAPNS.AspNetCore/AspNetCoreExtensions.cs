@@ -18,10 +18,15 @@ namespace dotAPNS.AspNetCore
                 {
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
                     client.DefaultRequestVersion = HttpVersion.Version20;
+                    client.DefaultRequestHeaders.ConnectionClose = false;
                 })
 #endif
                 ;
             services.AddHttpClient("dotAPNS_DisableCerverCertValidation")
+                .ConfigureHttpClient(client =>
+                {
+                    client.DefaultRequestHeaders.ConnectionClose = false;
+                })
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
                 {
                     ServerCertificateCustomValidationCallback = (m, x, c, s) => true

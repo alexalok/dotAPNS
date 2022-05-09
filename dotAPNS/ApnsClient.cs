@@ -171,7 +171,7 @@ namespace dotAPNS
         private async Task<ApnsResponse> SendSingleAsyncInternal(ApplePush push, HttpContent content, CancellationToken cancellationToken = default)
         {
             Guard.IsFalse(push.IsBatched, "IsBatched", "Must be used only with single non-batched push notifications");
-            var token = new Token(push.Token ?? push.VoipToken, push.Type, push.IsSendToDevelopmentServer);
+            var token = new Token(push.Token ?? push.VoipToken, push.Type, push.IsSandbox);
             return await SendToTokenAsyncInternal(push, token, content, cancellationToken).ConfigureAwait(false);
         }
 

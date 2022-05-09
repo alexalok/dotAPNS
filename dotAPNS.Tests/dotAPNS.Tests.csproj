@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net5.0;net6.0</TargetFrameworks>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -17,13 +17,15 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <ProjectReference Include="..\dotAPNS.AspNetCore\dotAPNS.AspNetCore.csproj" />
-    <ProjectReference Include="..\dotAPNS\dotAPNS.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\dotAPNS.AspNetCore\dotAPNS.AspNetCore.csproj" />
+    <ProjectReference Include="..\dotAPNS\dotAPNS.csproj" />
   </ItemGroup>
 
   <ItemGroup>

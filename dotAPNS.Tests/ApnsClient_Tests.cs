@@ -259,7 +259,13 @@ namespace dotAPNS.Tests
         [TestMethod]
         public async Task Ensure_SendAsync_Throws_On_Expired_Certificate_On_Windows()
         {
-            if(OperatingSystem.IsWindows())
+            if(
+#if NET5_0_OR_GREATER
+                OperatingSystem.IsWindows()
+#else
+                Environment.OSVersion.Platform == PlatformID.Win32NT
+#endif       
+                )
             {
                 // Arrange
                 var ex = new HttpRequestException(null,
@@ -276,7 +282,13 @@ namespace dotAPNS.Tests
         [TestMethod]
         public async Task Ensure_SendAsync_Throws_On_Expired_Certificate_On_Linux()
         {
-            if (OperatingSystem.IsLinux())
+            if (
+#if NET5_0_OR_GREATER
+                OperatingSystem.IsLinux()
+#else
+                Environment.OSVersion.Platform == PlatformID.Unix
+#endif  
+                )
             {
                 // Arrange
                 var ex = new HttpRequestException(null,

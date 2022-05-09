@@ -50,11 +50,11 @@ namespace dotAPNS.AspNetCore
         Task<List<ApnsResponse>> SendPushes(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions jwtOptions, bool useSandbox = false);
 
 
-        Task<ApnsResponse> SendPushAsync(ApplePush push, X509Certificate2 cert, bool useSandbox = false, CancellationToken cancellationToken = default);
-        Task<ApnsResponse> SendPushAsync(ApplePush push, ApnsJwtOptions? jwtOptions = null, bool useSandbox = false, CancellationToken cancellationToken = default);
+        Task<ApnsResponse> SendPushAsync(ApplePush push, X509Certificate2 cert, CancellationToken cancellationToken = default);
+        Task<ApnsResponse> SendPushAsync(ApplePush push, ApnsJwtOptions? jwtOptions = null, CancellationToken cancellationToken = default);
         Task<IEnumerable<ApnsResponse>> SendBatchAsync(ApplePush push, ApnsJwtOptions? jwtOptions = null, CancellationToken cancellationToken = default);
-        Task<List<ApnsResponse>> SendPushesAsync(IReadOnlyCollection<ApplePush> pushes, X509Certificate2 cert, bool useSandbox = false, CancellationToken cancellationToken = default);
-        Task<List<ApnsResponse>> SendPushesAsync(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions? jwtOptions = null, bool useSandbox = false, CancellationToken cancellationToken = default);
+        Task<List<ApnsResponse>> SendPushesAsync(IReadOnlyCollection<ApplePush> pushes, X509Certificate2 cert, CancellationToken cancellationToken = default);
+        Task<List<ApnsResponse>> SendPushesAsync(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions? jwtOptions = null, CancellationToken cancellationToken = default);
     }
 
     public class ApnsService : IApnsService
@@ -80,9 +80,9 @@ namespace dotAPNS.AspNetCore
         [Obsolete]
         public Task<List<ApnsResponse>> SendPushes(IReadOnlyCollection<ApplePush> pushes, ApnsJwtOptions jwtOptions, bool useSandbox = false) => SendPushesAsync(pushes, jwtOptions);
 
-        public Task<ApnsResponse> SendPushAsync(ApplePush push, X509Certificate2 cert, bool useSandbox = false, CancellationToken cancellationToken = default)
+        public Task<ApnsResponse> SendPushAsync(ApplePush push, X509Certificate2 cert, CancellationToken cancellationToken = default)
         {
-            string clientCacheId = (useSandbox ? "s_" : "") + cert.Thumbprint;
+            string clientCacheId = (push.IsSandbox ? "s_" : "") + cert.Thumbprint;
             var client = _cachedCertClients.GetOrAdd(clientCacheId, _ => 
                 _apnsClientFactory.CreateUsingCert(cert, _options.DisableServerCertificateValidation));
 

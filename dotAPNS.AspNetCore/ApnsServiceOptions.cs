@@ -8,5 +8,6 @@
         /// </summary>
         public bool DisableServerCertificateValidation { get; set; }
         public ApnsJwtOptions? DefaultApnsJwtOptions { get; set; }
+        public int? MaxConcurrentConnections { get; set; }
     }
 }

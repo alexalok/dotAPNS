@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Microsoft.Extensions.Options;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
@@ -15,11 +16,11 @@ namespace dotAPNS.AspNetCore
     public class ApnsClientFactory : IApnsClientFactory
     {
         readonly IHttpClientFactory _httpClientFactory;
-
         public ApnsClientFactory(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
         }
+
 
         public IApnsClient CreateUsingCert(X509Certificate2 cert, bool disableServerCertValidation = false)
         {

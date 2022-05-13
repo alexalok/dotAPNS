@@ -1,6 +1,6 @@
 <Project>
  <PropertyGroup>
-	 <Version>5.0.0-dev2</Version>
+	 <Version>5.0.0-dev3</Version>
 	 <PackageReleaseNotes>Modernizes the library by targetting net5.0 and net6.0. Replaces Newtonsoft.Json with System.Text.Json. Adds CancellationTokens to the AspNetCore library</PackageReleaseNotes>
 	 <Authors>alexalok,StockDrops</Authors>
  </PropertyGroup>

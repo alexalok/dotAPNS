@@ -26,6 +26,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
 #endif
 
+#nullable enable
 namespace dotAPNS
 {
     public interface IApnsClient
@@ -150,21 +151,12 @@ namespace dotAPNS
 
             var content = JsonContent.Create(push.GeneratePayload(), options: new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
 
-#if NET6_0_OR_GREATER
-            var responses = new ConcurrentBag<ApnsResponse>();
-            await Parallel.ForEachAsync(push.Tokens, cancellationToken, async (token, ct) =>
-            {
-                responses.Add(await SendToTokenAsyncInternal(push, token, content, ct).ConfigureAwait(false));
-            }).ConfigureAwait(false);
-            return responses;
-#else
             var tasks = new List<Task<ApnsResponse>>();
             foreach(var token in push.Tokens)
             {
                 tasks.Add(SendToTokenAsyncInternal(push, token, content, cancellationToken));
             }
             return await Task.WhenAll(tasks).ConfigureAwait(false);
-#endif
         }
 
 
@@ -221,11 +213,11 @@ namespace dotAPNS
                 throw new ApnsCertificateExpiredException(innerException: ex);
             }
             if (resp.StatusCode == HttpStatusCode.OK)
-                return ApnsResponse.Successful();
-            return await HandleErrorAsync(resp, cancellationToken).ConfigureAwait(false);
+                return ApnsResponse.Successful(token.Value);
+            return await HandleErrorAsync(resp, token.Value, cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task<ApnsResponse> HandleErrorAsync(HttpResponseMessage responseMessage, CancellationToken cancellationToken = default)
+        private async Task<ApnsResponse> HandleErrorAsync(HttpResponseMessage responseMessage, string token,  CancellationToken cancellationToken = default)
         {
             // something went wrong
             // check for payload 
@@ -250,11 +242,11 @@ namespace dotAPNS
             catch (Exception ex) when (ex is JsonException || ex is InvalidDataException)
             {
                 return ApnsResponse.Error(ApnsResponseReason.Unknown,
-                    $"Status: {responseMessage.StatusCode}, reason: {respContent ?? "not specified"}.");
+                    $"Status: {responseMessage.StatusCode}, reason: {respContent ?? "not specified"}.", token);
             }
 
             Debug.Assert(errorPayload != null);
-            return ApnsResponse.Error(errorPayload?.Reason ?? ApnsResponseReason.Unknown, errorPayload?.ReasonRaw ?? "Empty content");
+            return ApnsResponse.Error(errorPayload?.Reason ?? ApnsResponseReason.Unknown, errorPayload?.ReasonRaw ?? "Empty content", token);
         }
 
         public static ApnsClient CreateUsingJwt(HttpClient http, ApnsJwtOptions options)

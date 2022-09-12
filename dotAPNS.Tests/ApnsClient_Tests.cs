@@ -1,23 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using ExpectedObjects;
 using JetBrains.Annotations;
 using Moq;
 using Moq.Protected;
-using Newtonsoft.Json.Bson;
 using Nito.AsyncEx;
 using Xunit;
 
@@ -46,9 +41,9 @@ namespace dotAPNS.Tests
         }
 
         [Fact]
-        public void Creating_Client_With_Cert_Not_Fails_Only_On_NetCore3_0()
+        public void Creating_Client_With_Cert_Fails_Only_On_Net6()
         {
-#if !NETCOREAPP3_1
+#if NET46
             Assert.Throws<NotSupportedException>(() => ApnsClient.CreateUsingCert(_certs.P12Cert));
 #else
             ApnsClient.CreateUsingCert(_certs.P12Cert);
@@ -177,9 +172,9 @@ namespace dotAPNS.Tests
         [Theory]
         [InlineData(false, false, ApnsClient.ProductionEndpoint)]
         [InlineData(false, true, ApnsClient.DevelopmentEndpoint)]
-        [InlineData(true, false, ApnsClient.DevelopmentEndpoint)] 
+        [InlineData(true, false, ApnsClient.DevelopmentEndpoint)]
         [InlineData(true, true, ApnsClient.DevelopmentEndpoint)]
-        public async Task SendAsync_Should_Use_Correct_Environment_Server(bool isClientDevelopment, bool isPushDevelopment, 
+        public async Task SendAsync_Should_Use_Correct_Environment_Server(bool isClientDevelopment, bool isPushDevelopment,
             string expectedUrl)
         {
             var (apns, httpHandlerMock) = BoostrapApnsClient();
@@ -207,7 +202,7 @@ namespace dotAPNS.Tests
         [Fact]
         public Task SendAsync_Throws_When_Canceled()
         {
-            var (apns, httpHandlerMock) = BoostrapApnsClient(delay:TimeSpan.FromSeconds(10));
+            var (apns, httpHandlerMock) = BoostrapApnsClient(delay: TimeSpan.FromSeconds(10));
             var push = CreateStubPush();
             return Assert.ThrowsAsync<TaskCanceledException>(async () =>
             {
@@ -262,7 +257,7 @@ namespace dotAPNS.Tests
             // Arrange
             var ex = new HttpRequestException(null,
                 new AuthenticationException(null,
-                    new Win32Exception(- 2146893016)));
+                    new Win32Exception(-2146893016)));
             var (apns, httpHandlerMock) = BoostrapApnsClient(throwOnResponse: ex);
             var push = CreateStubPush();
 
@@ -303,9 +298,9 @@ namespace dotAPNS.Tests
             }
         };
 
-        (ApnsClient apns, Mock<HttpMessageHandler> httpHandlerMock) BoostrapApnsClient(int statusCode = 200, string responseContent = "{}", TimeSpan delay=default, [CanBeNull] Exception throwOnResponse = null)
+        (ApnsClient apns, Mock<HttpMessageHandler> httpHandlerMock) BoostrapApnsClient(int statusCode = 200, string responseContent = "{}", TimeSpan delay = default, [CanBeNull] Exception throwOnResponse = null)
         {
-            if(delay==default) delay = TimeSpan.FromMilliseconds(1);
+            if (delay == default) delay = TimeSpan.FromMilliseconds(1);
             var httpHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
             var sendAsyncSetup = httpHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>(
@@ -325,12 +320,12 @@ namespace dotAPNS.Tests
                     await Task.Delay(delay, c).ConfigureAwait(false); // technically library-side code, thus ignoring sync ctx
                     return new HttpResponseMessage()
                     {
-                        StatusCode = (HttpStatusCode) statusCode,
+                        StatusCode = (HttpStatusCode)statusCode,
                         Content = new JsonContent(responseContent)
                     };
                 });
             }
-                
+
             var jwt = CreateStubJwt();
             var client = ApnsClient.CreateUsingJwt(new HttpClient(httpHandler.Object), jwt);
             return (client, httpHandler);

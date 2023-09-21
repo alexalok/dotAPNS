@@ -6,6 +6,7 @@
         Alert,
         Background,
         Voip,
-        Location
+        Location,
+        Mdm
     }
 }

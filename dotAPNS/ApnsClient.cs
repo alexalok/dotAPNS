@@ -63,6 +63,7 @@ namespace dotAPNS
         /// True if certificate provided can only be used for 'voip' type pushes, false otherwise.
         /// </summary>
         readonly bool _isVoipCert;
+        readonly string _certTopic;
 
         readonly string _bundleId;
         bool _useSandbox;
@@ -87,6 +88,7 @@ namespace dotAPNS
                 throw new InvalidOperationException("Provided certificate does not appear to be a valid APNs certificate.");
 
             string topic = split[1];
+            _certTopic = topic;
             _isVoipCert = topic.EndsWith(".voip");
             _bundleId = split[1].Replace(".voip", "");
             _useCert = true;
@@ -307,6 +309,14 @@ namespace dotAPNS
                     return _bundleId + ".voip";
                 case ApplePushType.Location:
                     return _bundleId + ".location-query";
+                case ApplePushType.Mdm:
+                    if (String.IsNullOrEmpty(_certTopic))
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(pushType), pushType, null);
+                    } else
+                    {
+                        return _certTopic;
+                    }
                 case ApplePushType.Unknown:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(pushType), pushType, null);

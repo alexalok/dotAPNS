@@ -386,16 +386,10 @@ namespace dotAPNS
                 foreach (var customApsProperty in CustomApsProperties)
                     apsAsDict[customApsProperty.Key] = customApsProperty.Value;
             }
-            Dictionary<string, object> appList = payload.aps;
-            if (appList.Count == 0)
-            {
-                var dict = (IDictionary<string, object>)payload;
-                dict.Remove("aps");
-                return dict;
-            } else
-            {
-                return payload;
-            }
+
+            var dict = (IDictionary<string, object>)payload;
+            dict.Remove("aps");
+            return dict;
         }
     }
 

@@ -38,6 +38,7 @@
         MethodNotAllowed,
 
         // 410
+        ExpiredToken,
         Unregistered,
 
         // 413

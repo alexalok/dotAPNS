@@ -7,6 +7,7 @@
         Background,
         Voip,
         Location,
-        LiveActivity
+        LiveActivity,
+        Mdm
     }
 }

@@ -387,7 +387,11 @@ namespace dotAPNS
                     apsAsDict[customApsProperty.Key] = customApsProperty.Value;
             }
 
-            return payload;
+            var dict = (IDictionary<string, object>)payload; 
+            if (Type == ApplePushType.Mdm) 
+                dict.Remove("aps");
+                
+            return dict;
         }
     }
 

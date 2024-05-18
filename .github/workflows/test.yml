@@ -16,19 +16,18 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-latest]
     steps:
     - uses: actions/checkout@v2
+    - name: Setup .NET Core 6
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0'
     - name: Create test JWT file
       run: echo "$dotapns_tests_p8_contents" > "jwt.p8"
       shell: bash
     - name: Clear local NuGet cache (workaround for failed restores on windows-latest)
+      if: matrix.os == 'windows-latest'
       run: dotnet nuget locals all --clear
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Test for .NET Core 3.1
-      run: dotnet test --no-build --verbosity normal --framework netcoreapp3.1
     - name: Test for .NET 6
       run: dotnet test --no-build --verbosity normal --framework net6.0
     - name: Test for .NET Framework 4.6
-      run: dotnet test --no-build --verbosity normal --framework net46
       if: matrix.os == 'windows-latest'
+      run: dotnet test --no-build --verbosity normal --framework net46

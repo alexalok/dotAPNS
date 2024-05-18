@@ -1,5 +1,5 @@
 ## 🍎 What is dotAPNS?
-[![Build status](https://img.shields.io/github/workflow/status/alexalok/dotAPNS/Test)](https://github.com/alexalok/dotAPNS/actions?query=workflow%3ATest)	[![Nuget package](https://img.shields.io/nuget/v/dotAPNS)](https://www.nuget.org/packages/dotAPNS/)	[![Nuget package downloads](https://img.shields.io/nuget/dt/dotAPNS?label=nuget%20downloads)](https://www.nuget.org/packages/dotAPNS/)
+[![Build status](https://img.shields.io/github/actions/workflow/status/alexalok/dotapns/test.yml?branch=master)](https://github.com/alexalok/dotAPNS/actions?query=workflow%3ATest)	[![Nuget package](https://img.shields.io/nuget/v/dotAPNS)](https://www.nuget.org/packages/dotAPNS/)	[![Nuget package downloads](https://img.shields.io/nuget/dt/dotAPNS?label=nuget%20downloads)](https://www.nuget.org/packages/dotAPNS/)
 
 dotAPNS is a small library used to send pushes to Apple devices via the [HTTP/2 APNs API](https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server), which is an officially recommended way of interacting with APNs (*Apple Push Notification service*).
 

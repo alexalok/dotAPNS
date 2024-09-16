@@ -11,4 +11,4 @@ jobs:
       - name: Publish to NuGet
         run: |
           dotnet pack -c Release --include-source --include-symbols --nologo -o ./packed
-          dotnet nuget push "./packed/*" --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
+          dotnet nuget push "./packed/*" --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json --skip-duplicate

@@ -43,6 +43,12 @@ namespace dotAPNS
         internal const string DevelopmentEndpoint = "https://api.sandbox.push.apple.com";
         internal const string ProductionEndpoint = "https://api.push.apple.com";
 
+        // UserId could be defined with all these forms
+        // - https://oidref.com/0.9.2342.19200300.100.1.1
+        // - On Linux .NET Core cert.Subject prints `userId=xxx` instead of `0.9.2342.19200300.100.1.1=xxx`
+        // - `uid=xxx` instead of `0.9.2342.19200300.100.1.1=xxx`
+        private static readonly string[] CertificateSubjectUserIdSplit = ["0.9.2342.19200300.100.1.1=", "userId=", "uid="];
+
 #if NET46
         readonly CngKey _key;
 #else
@@ -72,30 +78,27 @@ namespace dotAPNS
         ApnsClient(HttpClient http, [NotNull] X509Certificate cert)
         {
             _http = http;
-            var split = cert.Subject.Split(new[] { "0.9.2342.19200300.100.1.1=" }, StringSplitOptions.RemoveEmptyEntries);
-            if (split.Length != 2)
-            {
-                // On Linux .NET Core cert.Subject prints `userId=xxx` instead of `0.9.2342.19200300.100.1.1=xxx`
-                split = cert.Subject.Split(new[] { "userId=" }, StringSplitOptions.RemoveEmptyEntries);
-            }
-            if (split.Length != 2)
-            {
-                // if subject prints `uid=xxx` instead of `0.9.2342.19200300.100.1.1=xxx`
-                split = cert.Subject.Split(new[] { "uid=" }, StringSplitOptions.RemoveEmptyEntries);
-            }
-
-            if (split.Length != 2)
-                throw new InvalidOperationException("Provided certificate does not appear to be a valid APNs certificate.");
-
-            string topic = split[1];
-            _certTopic = topic;
-            _isVoipCert = topic.EndsWith(".voip");
-            _bundleId = split[1].Replace(".voip", "");
             _useCert = true;
+            GetCertificateInfo(cert, out _certTopic, out _isVoipCert, out _bundleId);
+        }
+        
+        public static void GetCertificateInfo(X509Certificate certificate, out string topic, out bool isVoipCert, out string bundleId)
+        {
+            string[] split = certificate.Subject.Split(CertificateSubjectUserIdSplit, StringSplitOptions.RemoveEmptyEntries);
+
+            if (split.Length != 2)
+            {
+                throw new InvalidOperationException("Provided certificate does not appear to be a valid APNs certificate.");
+            }
+
+            topic = split[1];
+            var indexOfVoip = topic.LastIndexOf(".voip", StringComparison.Ordinal);
+            isVoipCert = indexOfVoip > -1;
+            bundleId = !isVoipCert ? topic : topic.Substring(0, indexOfVoip);
         }
 
         ApnsClient([NotNull] HttpClient http, [NotNull]
-#if NET46 
+#if NET46
                    CngKey
 #else
                    ECDsa

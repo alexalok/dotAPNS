@@ -72,6 +72,13 @@ Note that the library *requires* you to supply `HttpClient` instance - this is d
 
 **🎉You're now all set to start sending pushes!🎉**
 
+## ⚠️ Windows compatibility notes
+
+APNs requires HTTP/2 over TLS with ALPN negotiation. On some older Windows versions the underlying HTTP/2/ALPN stack is missing or incomplete, which prevents establishing a compliant connection to APNs.
+
+- **.NET Framework (net462)**: Use `System.Net.Http.WinHttpHandler` as shown above, and run on a Windows version with HTTP/2 support (Windows 10 / Windows Server 2016 or newer recommended). On older systems (e.g., Windows 7/8 or Windows Server 2012) the handler will fall back to HTTP/1.1 and APNs requests will fail; there is no library-level workaround.
+- **.NET Core/.NET (netstandard2.x consumers)**: `HttpClient` uses `SocketsHttpHandler` which can speak HTTP/2 when the OS supports ALPN. Modern Windows, Linux, and macOS typically work out of the box. Very old Windows versions without ALPN/HTTP/2 support will not work with APNs.
+
 ---
 
 

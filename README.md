@@ -130,6 +130,19 @@ catch (ApnsCertificateExpiredException)
 }
 ```
 
+## Critical alerts
+
+Critical alerts use a sound dictionary in the APNs payload. The sound volume must be between `0` and `1`:
+
+```c#
+var push = new ApplePush(ApplePushType.Alert)
+    .AddAlert("title", "body")
+    .AddCriticalSound("default", 1.0)
+    .AddToken("token");
+```
+
+The receiving app must have Apple's Critical Alerts entitlement and request the user's critical-alert authorization. dotAPNS only creates and sends the APNs payload.
+
 ## Background (aka "silent") push
 ```c#
 var push = new ApplePush(ApplePushType.Background)

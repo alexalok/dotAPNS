@@ -34,6 +34,9 @@ namespace dotAPNS
         [CanBeNull]
         public string Sound { get; private set; }
 
+        [CanBeNull]
+        public ApplePushCriticalSound CriticalSound { get; private set; }
+
         /// <summary>
         /// See <a href="https://developer.apple.com/documentation/usernotifications/unnotificationcontent/1649866-categoryidentifier">official documentation</a> for reference.
         /// </summary>
@@ -221,9 +224,28 @@ namespace dotAPNS
             if (string.IsNullOrWhiteSpace(sound))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(sound));
             IsContentAvailableGuard();
-            if (Sound != null)
-                throw new InvalidOperationException("Sound already exists");
+            EnsureSoundNotExistsGuard();
             Sound = sound;
+            return this;
+        }
+
+        /// <summary>
+        /// Add a critical alert sound to the payload.
+        /// The receiving app must have Apple's critical alerts entitlement and the user's authorization.
+        /// </summary>
+        /// <param name="sound">The sound file name, or <c>default</c> for the system sound.</param>
+        /// <param name="volume">The sound volume between 0 (silent) and 1 (full volume).</param>
+        public ApplePush AddCriticalSound([NotNull] string sound = "default", double volume = 1.0)
+        {
+            if (string.IsNullOrWhiteSpace(sound))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(sound));
+            if (double.IsNaN(volume) || double.IsInfinity(volume) || volume < 0 || volume > 1)
+                throw new ArgumentOutOfRangeException(nameof(volume), volume, "Volume must be between 0 and 1.");
+            if (Type != ApplePushType.Alert)
+                throw new InvalidOperationException(
+                    $"Critical sounds may only be used with {nameof(ApplePushType.Alert)} pushes.");
+            EnsureSoundNotExistsGuard();
+            CriticalSound = new ApplePushCriticalSound(sound, volume);
             return this;
         }
 
@@ -332,6 +354,12 @@ namespace dotAPNS
                 throw new InvalidOperationException("Notification already has token");
         }
 
+        void EnsureSoundNotExistsGuard()
+        {
+            if (Sound != null || CriticalSound != null)
+                throw new InvalidOperationException("Sound already exists");
+        }
+
         void IsContentAvailableGuard()
         {
             if (IsContentAvailable)
@@ -368,7 +396,9 @@ namespace dotAPNS
             if (Badge != null)
                 payload.aps.badge = Badge.Value;
 
-            if (Sound != null)
+            if (CriticalSound != null)
+                payload.aps.sound = CriticalSound;
+            else if (Sound != null)
                 payload.aps.sound = Sound;
 
             if (Category != null)

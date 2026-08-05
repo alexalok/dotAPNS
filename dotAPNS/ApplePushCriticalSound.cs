@@ -12,7 +12,7 @@ namespace dotAPNS
         [JsonProperty("name")]
         public string Name { get; }
 
-        [JsonProperty("volume")]
+        [JsonProperty("volume", DefaultValueHandling = DefaultValueHandling.Include)]
         public double Volume { get; }
 
         internal ApplePushCriticalSound([NotNull] string name, double volume)

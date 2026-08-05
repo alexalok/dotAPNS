@@ -33,6 +33,22 @@ namespace dotAPNS.Tests
         }
 
         [Fact]
+        public void Creating_Push_With_Zero_Critical_Sound_Volume_Includes_Volume_When_Default_Values_Are_Ignored()
+        {
+            var push = new ApplePush(ApplePushType.Alert)
+                .AddAlert("body")
+                .AddCriticalSound(volume: 0.0);
+
+            var payload = push.GeneratePayload();
+            string payloadJson = JsonConvert.SerializeObject(payload, new JsonSerializerSettings
+            {
+                DefaultValueHandling = DefaultValueHandling.Ignore
+            });
+            const string referenceJson = "{\"aps\":{\"alert\":\"body\",\"sound\":{\"critical\":1,\"name\":\"default\",\"volume\":0.0}}}";
+            Assert.Equal(referenceJson, payloadJson);
+        }
+
+        [Fact]
         public void Existing_Regular_Sound_Payload_Remains_Unchanged()
         {
             var push = new ApplePush(ApplePushType.Alert)
